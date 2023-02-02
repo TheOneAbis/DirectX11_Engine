@@ -27,6 +27,7 @@ private:
 	// Initialization helper methods - feel free to customize, combine, remove, etc.
 	void LoadShaders(); 
 	void CreateGeometry();
+	void UpdateUI(float deltaTime);
 
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
@@ -39,6 +40,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer;
 
+	// Screen offsets and color tints
+	DirectX::XMFLOAT3 screenOffset;
+	DirectX::XMFLOAT4 screenTint;
 };
 

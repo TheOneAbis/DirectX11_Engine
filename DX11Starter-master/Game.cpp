@@ -2,6 +2,13 @@
 #include "Vertex.h"
 #include "Input.h"
 #include "Helpers.h"
+#include "BufferStructs.h"
+
+// This code assumes files are in "ImGui" subfolder!
+// Adjust as necessary for your own folder structure
+#include "ImGui/imgui.h"
+#include "ImGui/imgui_impl_dx11.h"
+#include "ImGui/imgui_impl_win32.h"
 
 // Needed for a helper function to load pre-compiled shader files
 #pragma comment(lib, "d3dcompiler.lib")
@@ -41,6 +48,11 @@ Game::Game(HINSTANCE hInstance)
 // --------------------------------------------------------
 Game::~Game()
 {
+	// ImGui clean up
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+
 	// Call delete or delete[] on any objects or arrays you've
 	// created using new or new[] within this class
 	// - Note: this is unnecessary if using smart pointers
@@ -55,11 +67,20 @@ Game::~Game()
 // --------------------------------------------------------
 void Game::Init()
 {
+	// Initialize ImGui itself & platform/renderer backends
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui_ImplWin32_Init(hWnd);
+	ImGui_ImplDX11_Init(device.Get(), context.Get());
+	ImGui::StyleColorsDark();
+	
 	// Helper methods for loading shaders, creating some basic
 	// geometry to draw and some simple camera matrices.
 	//  - You'll be expanding and/or replacing these later
 	LoadShaders();
 	CreateGeometry();
+	screenOffset = XMFLOAT3(0.25f, 0.0f, 0.0f);
+	screenTint = XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f);
 	
 	// Set initial graphics API state
 	//  - These settings persist until we change them
@@ -82,6 +103,20 @@ void Game::Init()
 		context->VSSetShader(vertexShader.Get(), 0, 0);
 		context->PSSetShader(pixelShader.Get(), 0, 0);
 	}
+
+	// Get size as the next multiple of 16 (instead of hardcoding a size here)
+	unsigned int size = sizeof(VertexShaderExternalData);
+	size = (size + 15) / 16 * 16; // This will work even if the struct size changes
+
+	// Describe the constant buffer
+	D3D11_BUFFER_DESC cbDesc = {}; // Sets struct to all zeros
+	cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	cbDesc.ByteWidth = size; // Must be a multiple of 16
+	cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+
+	// Create the constant buffer
+	device->CreateBuffer(&cbDesc, 0, vsConstantBuffer.GetAddressOf());
 }
 
 // --------------------------------------------------------
@@ -246,9 +281,43 @@ void Game::OnResize()
 // --------------------------------------------------------
 void Game::Update(float deltaTime, float totalTime)
 {
+	// Update UI
+	this->UpdateUI(deltaTime);
+
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::GetInstance().KeyDown(VK_ESCAPE))
 		Quit();
+}
+
+void Game::UpdateUI(float deltaTime)
+{
+	// Feed fresh input data to ImGui
+	ImGuiIO& io = ImGui::GetIO();
+	io.DeltaTime = deltaTime;
+	io.DisplaySize.x = (float)this->windowWidth;
+	io.DisplaySize.y = (float)this->windowHeight;
+
+	// Reset the frame
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	// Determine new input capture
+	Input& input = Input::GetInstance();
+	input.SetKeyboardCapture(io.WantCaptureKeyboard);
+	input.SetMouseCapture(io.WantCaptureMouse);
+
+	// Show the demo window
+	ImGui::ShowDemoWindow();
+
+	ImGui::Begin("Stats");
+	ImGui::Text("FPS: %f", ImGui::GetIO().Framerate);
+	ImGui::Text("Window Width: %i", this->windowWidth);
+	ImGui::Text("Window Height: %i", this->windowHeight);
+	// for editing vectors, use pointer to first element of it
+	ImGui::DragFloat3("World Offset", &screenOffset.x);
+	ImGui::DragFloat4("World Color Tint", &screenTint.x);
+	ImGui::End();
 }
 
 // --------------------------------------------------------
@@ -268,9 +337,33 @@ void Game::Draw(float deltaTime, float totalTime)
 		context->ClearDepthStencilView(depthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
 
+	VertexShaderExternalData vsData;
+	// Reduced sensitivity of scrolling these values so they aren't so annoying
+	vsData.colorTint = XMFLOAT4(screenTint.x/255, screenTint.y/255, screenTint.z/255, screenTint.w/255);
+	vsData.offset = XMFLOAT3(screenOffset.x/500, screenOffset.y/500, screenOffset.z/500);
+
+	// Holds a pointer to the resource's memory after mapping occurs
+	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
+	context->Map(vsConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
+
+	// copy data from vsData into mapedBuffer
+	memcpy(mappedBuffer.pData, &vsData, sizeof(vsData)); 
+
+	context->Unmap(vsConstantBuffer.Get(), 0);
+
+	// Bind the constant buffer to the cbufer register in GPU memory
+	context->VSSetConstantBuffers(
+		0,   // Which slot (register) to bind the buffer to?
+		1,   // How many are we activating? Can do multiple at once
+		vsConstantBuffer.GetAddressOf()); // Array of buffers (or the address of one)
+
 	// Draw the meshes here
 	for (std::shared_ptr<Mesh> mesh : meshes)
 		mesh->Draw();
+
+	// Render the UI
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
 	// Frame END
 	// - These should happen exactly ONCE PER FRAME
