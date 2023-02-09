@@ -2,6 +2,7 @@
 
 #include "DXCore.h"
 #include "Mesh.h"
+#include "GameEntity.h"
 #include <DirectXMath.h>
 #include <wrl/client.h> // Used for ComPtr - a smart pointer for COM objects
 #include <vector>
@@ -34,6 +35,7 @@ private:
 	//     Component Object Model, which DirectX objects do
 	//  - More info here: https://github.com/Microsoft/DirectXTK/wiki/ComPtr
 
+	std::vector<GameEntity> gameObjects;
 	std::vector<std::shared_ptr<Mesh>> meshes;
 	
 	// Shaders and shader-related constructs
@@ -43,7 +45,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer;
 
 	// Screen offsets and color tints
-	DirectX::XMFLOAT3 screenOffset;
 	DirectX::XMFLOAT4 screenTint;
 };
 

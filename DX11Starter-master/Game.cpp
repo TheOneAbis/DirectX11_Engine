@@ -3,6 +3,7 @@
 #include "Input.h"
 #include "Helpers.h"
 #include "BufferStructs.h"
+#include "GameEntity.h"
 
 // This code assumes files are in "ImGui" subfolder!
 // Adjust as necessary for your own folder structure
@@ -13,6 +14,7 @@
 // Needed for a helper function to load pre-compiled shader files
 #pragma comment(lib, "d3dcompiler.lib")
 #include <d3dcompiler.h>
+#include <iostream>
 
 // For the DirectX Math library
 using namespace DirectX;
@@ -79,7 +81,6 @@ void Game::Init()
 	//  - You'll be expanding and/or replacing these later
 	LoadShaders();
 	CreateGeometry();
-	screenOffset = XMFLOAT3(0.25f, 0.0f, 0.0f);
 	screenTint = XMFLOAT4(1.0f, 0.5f, 0.5f, 1.0f);
 	
 	// Set initial graphics API state
@@ -262,6 +263,14 @@ void Game::CreateGeometry()
 	meshes.push_back(std::make_shared<Mesh>(vertices, 3, indices, 3, device, context));
 	meshes.push_back(std::make_shared<Mesh>(rectVertices, 4, rectIndices, 6, device, context));
 	meshes.push_back(std::make_shared<Mesh>(weirdVertices, 6, weirdIndices, 12, device, context));
+
+	// Create the game objects
+	gameObjects.push_back(GameEntity(meshes[0]));
+	gameObjects.push_back(GameEntity(meshes[1]));
+	gameObjects.push_back(GameEntity(meshes[1]));
+	gameObjects.push_back(GameEntity(meshes[2]));
+	gameObjects.push_back(GameEntity(meshes[2]));
+	gameObjects.push_back(GameEntity(meshes[2]));
 }
 
 
@@ -281,6 +290,12 @@ void Game::OnResize()
 // --------------------------------------------------------
 void Game::Update(float deltaTime, float totalTime)
 {
+	gameObjects[0].GetTransform()->Rotate(0, 0, deltaTime);
+	gameObjects[2].GetTransform()->SetScale(sinf(totalTime) + 1, 1, 1);
+	gameObjects[1].GetTransform()->MoveAbsolute(deltaTime / 10, deltaTime / 10, 0);
+	gameObjects[5].GetTransform()->Rotate(0, 0, deltaTime / 3);
+	gameObjects[4].GetTransform()->Rotate(0, 0, -deltaTime / 3);
+
 	// Update UI
 	this->UpdateUI(deltaTime);
 
@@ -315,8 +330,22 @@ void Game::UpdateUI(float deltaTime)
 	ImGui::Text("Window Width: %i", this->windowWidth);
 	ImGui::Text("Window Height: %i", this->windowHeight);
 	// for editing vectors, use pointer to first element of it
-	ImGui::DragFloat3("World Offset", &screenOffset.x);
-	ImGui::DragFloat4("World Color Tint", &screenTint.x);
+	ImGui::ColorEdit4("World Color Tint", &screenTint.x);
+	ImGui::End();
+
+	// Game Object Inspector
+	ImGui::Begin("Inspector");
+	
+	for (int i = 0; i < 6; i++)
+	{
+		if (ImGui::TreeNode((void*)(intptr_t)i, "Game Object %d", i))
+		{
+			ImGui::DragFloat3("Position: ", &gameObjects[i].GetTransform()->GetPosition().x, 0.01f);
+			ImGui::DragFloat3("Rotation: ", &gameObjects[i].GetTransform()->GetPitchYawRoll().x, 0.01f);
+			ImGui::DragFloat3("Scale: ", &gameObjects[i].GetTransform()->GetScale().x, 0.01f);
+			ImGui::TreePop();
+		}
+	}
 	ImGui::End();
 }
 
@@ -337,29 +366,9 @@ void Game::Draw(float deltaTime, float totalTime)
 		context->ClearDepthStencilView(depthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
 
-	VertexShaderExternalData vsData;
-	// Reduced sensitivity of scrolling these values so they aren't so annoying
-	vsData.colorTint = XMFLOAT4(screenTint.x/255, screenTint.y/255, screenTint.z/255, screenTint.w/255);
-	vsData.offset = XMFLOAT3(screenOffset.x/500, screenOffset.y/500, screenOffset.z/500);
-
-	// Holds a pointer to the resource's memory after mapping occurs
-	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
-	context->Map(vsConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
-
-	// copy data from vsData into mapedBuffer
-	memcpy(mappedBuffer.pData, &vsData, sizeof(vsData)); 
-
-	context->Unmap(vsConstantBuffer.Get(), 0);
-
-	// Bind the constant buffer to the cbufer register in GPU memory
-	context->VSSetConstantBuffers(
-		0,   // Which slot (register) to bind the buffer to?
-		1,   // How many are we activating? Can do multiple at once
-		vsConstantBuffer.GetAddressOf()); // Array of buffers (or the address of one)
-
-	// Draw the meshes here
-	for (std::shared_ptr<Mesh> mesh : meshes)
-		mesh->Draw();
+	// Render Game entities
+	for (GameEntity& gameObject : gameObjects)
+		gameObject.Draw(context, vsConstantBuffer, screenTint);
 
 	// Render the UI
 	ImGui::Render();
