@@ -118,6 +118,13 @@ void Game::Init()
 
 	// Create the constant buffer
 	device->CreateBuffer(&cbDesc, 0, vsConstantBuffer.GetAddressOf());
+
+	// Set size to pixel buffer struct size and create the cbuf for mouse position
+	size = (sizeof(PixelShaderExternalData) + 15) / 16 * 16;
+	cbDesc.ByteWidth = size;
+
+	// Create the pixel constant buffer
+	device->CreateBuffer(&cbDesc, 0, psConstantBuffer.GetAddressOf());
 }
 
 // --------------------------------------------------------
@@ -290,11 +297,21 @@ void Game::OnResize()
 // --------------------------------------------------------
 void Game::Update(float deltaTime, float totalTime)
 {
+	// Do funny transformations on game objects
 	gameObjects[0].GetTransform()->Rotate(0, 0, deltaTime);
 	gameObjects[2].GetTransform()->SetScale(sinf(totalTime) + 1, 1, 1);
 	gameObjects[1].GetTransform()->MoveAbsolute(deltaTime / 10, deltaTime / 10, 0);
 	gameObjects[5].GetTransform()->Rotate(0, 0, deltaTime / 3);
 	gameObjects[4].GetTransform()->Rotate(0, 0, -deltaTime / 3);
+
+	// Create pixel shader cbuffer and map the mouse position to the PixelShaderConstantBuffer
+	PixelShaderExternalData psData = {};
+	psData.mousePos = XMINT2(Input::GetInstance().GetMouseX(), Input::GetInstance().GetMouseY());
+	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
+	context->Map(psConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
+	memcpy(mappedBuffer.pData, &psData, sizeof(psData));
+	context->Unmap(psConstantBuffer.Get(), 0);
+	context->PSSetConstantBuffers(1, 1, psConstantBuffer.GetAddressOf());
 
 	// Update UI
 	this->UpdateUI(deltaTime);
@@ -334,7 +351,7 @@ void Game::UpdateUI(float deltaTime)
 	ImGui::End();
 
 	// Game Object Inspector
-	ImGui::Begin("Inspector");
+	ImGui::Begin("Hierarchy");
 	
 	for (int i = 0; i < 6; i++)
 	{

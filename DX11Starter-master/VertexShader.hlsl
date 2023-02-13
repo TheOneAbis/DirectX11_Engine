@@ -1,3 +1,4 @@
+// Make sure the data in here does not overlap a 16-byte boundary (1 float = 4 bytes)
 cbuffer ExternalData : register(b0)
 {
 	float4 colorTint;

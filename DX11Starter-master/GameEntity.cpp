@@ -24,8 +24,7 @@ void GameEntity::Draw(
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer,
 	XMFLOAT4 color)
 {
-	VertexShaderExternalData vsData;
-	// Reduced sensitivity of scrolling these values so they aren't so annoying
+	VertexShaderExternalData vsData = {};
 	vsData.colorTint = color;
 	vsData.worldMatrix = transform.GetWorldMatrix();
 

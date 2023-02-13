@@ -43,6 +43,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> psConstantBuffer;
 
 	// Screen offsets and color tints
 	DirectX::XMFLOAT4 screenTint;
