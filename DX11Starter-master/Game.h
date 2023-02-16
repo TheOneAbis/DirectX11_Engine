@@ -1,10 +1,7 @@
 #pragma once
 
 #include "DXCore.h"
-#include "Mesh.h"
 #include "GameEntity.h"
-#include "Camera.h"
-#include <DirectXMath.h>
 #include <wrl/client.h> // Used for ComPtr - a smart pointer for COM objects
 #include <vector>
 #include <memory>

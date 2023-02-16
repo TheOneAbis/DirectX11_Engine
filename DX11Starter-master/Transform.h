@@ -17,8 +17,13 @@ private:
 	DirectX::XMFLOAT3 forward;
 
 	void UpdateMatrices();
+	void UpdateLocalAxes();
 
 public:
+
+	static DirectX::XMFLOAT3 WorldRight;
+	static DirectX::XMFLOAT3 WorldUp;
+	static DirectX::XMFLOAT3 WorldForward;
 
 	Transform();
 
@@ -50,5 +55,4 @@ public:
 
 	DirectX::XMFLOAT4X4& GetWorldMatrix();
 	DirectX::XMFLOAT4X4& GetWorldInverseTransposeMatrix();
-
 };

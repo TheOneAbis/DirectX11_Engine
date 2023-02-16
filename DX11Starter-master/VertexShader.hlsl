@@ -59,7 +59,7 @@ VertexToPixel main( VertexShaderInput input )
 	// - Each of these components is then automatically divided by the W component, 
 	//   which we're leaving at 1.0 for now (this is more useful when dealing with 
 	//   a perspective projection matrix, which we'll get to in the future).
-	// 
+	
 	// Multiply the three matrices together first
 	matrix wvp = mul(projection, mul(view, world));
 	output.screenPosition = mul(wvp, float4(input.localPosition, 1.0f));

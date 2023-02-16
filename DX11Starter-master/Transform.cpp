@@ -1,6 +1,11 @@
 #include "Transform.h"
+#include <iostream>
 
 using namespace DirectX;
+
+XMFLOAT3 Transform::WorldRight = XMFLOAT3(1.0f, 0.0f, 0.0f);
+XMFLOAT3 Transform::WorldUp = XMFLOAT3(0.0f, 1.0f, 0.0f);
+XMFLOAT3 Transform::WorldForward = XMFLOAT3(0.0f, 0.0f, 1.0f);
 
 Transform::Transform()
 {
@@ -62,21 +67,7 @@ void Transform::Rotate(DirectX::XMFLOAT3 rotation)
 {
 	XMVECTOR rotVec = XMVectorAdd(XMLoadFloat3(&this->rotation), XMLoadFloat3(&rotation));
 	XMStoreFloat3(&this->rotation, rotVec);
-
-	// Create the rotation quat
-	XMVECTOR rotQuat = XMQuaternionRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
-
-	// Rotate local right
-	XMStoreFloat3(&right, XMVector3Rotate(XMLoadFloat3(&right),
-		rotQuat));
-
-	// Rotate local up
-	XMStoreFloat3(&up, XMVector3Rotate(XMLoadFloat3(&up),
-		rotQuat));
-
-	// Rotate local forward
-	XMStoreFloat3(&forward, XMVector3Rotate(XMLoadFloat3(&forward),
-		rotQuat));
+	UpdateLocalAxes();
 }
 
 void Transform::Scale(float x, float y, float z)
@@ -110,24 +101,7 @@ void Transform::SetRotation(float pitch, float yaw, float roll)
 void Transform::SetRotation(DirectX::XMFLOAT3 rotation)
 {
 	this->rotation = rotation;
-
-	XMFLOAT3 worldRight = XMFLOAT3(1, 0, 0);
-	XMFLOAT3 worldUp = XMFLOAT3(0, 1, 0);
-	XMFLOAT3 worldForward = XMFLOAT3(0, 0, 1);
-	// Create the rotation quat
-	XMVECTOR rotQuat = XMQuaternionRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
-
-	// Rotate local right
-	XMStoreFloat3(&right, XMVector3Rotate(XMLoadFloat3(&worldRight),
-		rotQuat));
-
-	// Rotate local up
-	XMStoreFloat3(&up, XMVector3Rotate(XMLoadFloat3(&worldUp),
-		rotQuat));
-
-	// Rotate local forward
-	XMStoreFloat3(&forward, XMVector3Rotate(XMLoadFloat3(&worldForward),
-		rotQuat));
+	UpdateLocalAxes();
 }
 
 void Transform::SetScale(float x, float y, float z)
@@ -183,4 +157,23 @@ DirectX::XMFLOAT4X4& Transform::GetWorldInverseTransposeMatrix()
 {
 	UpdateMatrices();
 	return worldInverseTranspose;
+}
+
+// Update transform's local right, up and forward axes
+void Transform::UpdateLocalAxes()
+{
+	// Create the rotation quat
+	XMVECTOR rotQuat = XMQuaternionRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
+
+	// Rotate local right
+	XMStoreFloat3(&right, XMVector3Rotate(XMLoadFloat3(&WorldRight),
+		rotQuat));
+
+	// Rotate local up
+	XMStoreFloat3(&up, XMVector3Rotate(XMLoadFloat3(&WorldUp),
+		rotQuat));
+
+	// Rotate local forward
+	XMStoreFloat3(&forward, XMVector3Rotate(XMLoadFloat3(&WorldForward),
+		rotQuat));
 }

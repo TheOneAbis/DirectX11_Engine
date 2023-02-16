@@ -4,8 +4,13 @@
 
 using namespace DirectX;
 
-Camera::Camera(float aspectRatio, float fov, float nearClip, float farClip, XMFLOAT3 position, XMFLOAT3 rotation, float movementSpeed, float mouseSens)
+Camera::Camera(CamType camType, 
+	float viewWidth, float viewHeight, 
+	float fov, float nearClip, float farClip, 
+	XMFLOAT3 position, XMFLOAT3 rotation, 
+	float movementSpeed, float mouseSens)
 {
+	this->camType = camType;
 	transform = Transform();
 	transform.SetPosition(position);
 	transform.SetRotation(rotation);
@@ -15,21 +20,21 @@ Camera::Camera(float aspectRatio, float fov, float nearClip, float farClip, XMFL
 	this->nearClip = nearClip;
 	this->farClip = farClip;
 
-	UpdateProjectionMatrix(aspectRatio);
+	UpdateProjectionMatrix(viewWidth, viewHeight);
 	UpdateViewMatrix();
 }
 
 void Camera::Update(float dt)
 {
 	Input& input = Input::GetInstance();
-	if (input.KeyDown('W')) { transform.MoveRelative(0, 0, dt); }        // FORWARD
-	if (input.KeyDown('S')) { transform.MoveRelative(0, 0, -dt); }         // BACKWARD
-	if (input.KeyDown('A')) { transform.MoveRelative(-dt, 0, 0); }        // LEFT
-	if (input.KeyDown('D')) { transform.MoveRelative(dt, 0, 0); }         // RIGHT
-	if (input.KeyDown(VK_SPACE)) { transform.MoveAbsolute(0, dt, 0); }    // UP
-	if (input.KeyDown(VK_CONTROL)) { transform.MoveAbsolute(0, -dt, 0); } // DOWN
+	if (input.KeyDown('W')) { transform.MoveRelative(0, 0, dt * moveSpeed); }  // FORWARD
+	if (input.KeyDown('S')) { transform.MoveRelative(0, 0, -dt * moveSpeed); } // BACKWARD
+	if (input.KeyDown('A')) { transform.MoveRelative(-dt * moveSpeed, 0, 0); } // LEFT
+	if (input.KeyDown('D')) { transform.MoveRelative(dt * moveSpeed, 0, 0); }  // RIGHT
+	if (input.KeyDown('E')) { transform.MoveAbsolute(0, dt * moveSpeed, 0); }  // UP
+	if (input.KeyDown('Q')) { transform.MoveAbsolute(0, -dt * moveSpeed, 0); } // DOWN
 
-	if (input.MouseLeftDown())
+	if (input.MouseRightDown())
 	{
 		int cursorMovementX = input.GetMouseXDelta();
 		int cursorMovementY = input.GetMouseYDelta();
@@ -39,19 +44,20 @@ void Camera::Update(float dt)
 			transform.GetPitchYawRoll().z);
 
 		// Clamp Pitch to +-PI/2 (slightly less than that)
-		if (transform.GetPitchYawRoll().x > PI / 2.01f) 
-			transform.SetRotation(PI / 2.01f, transform.GetPitchYawRoll().y, transform.GetPitchYawRoll().z);
-		else if (transform.GetPitchYawRoll().x < -PI / 2.01f) 
-			transform.SetRotation(-PI / 2.01f, transform.GetPitchYawRoll().y, transform.GetPitchYawRoll().z);
+		XMVECTOR pitchVec = XMVectorClamp(XMLoadFloat(&transform.GetPitchYawRoll().x),
+			XMVectorSet(-PI / 2.01f, 0, 0, 0), XMVectorSet(PI / 2.01f, 0, 0, 0));
+		XMStoreFloat(&transform.GetPitchYawRoll().x, pitchVec);
 	}
 
 	UpdateViewMatrix();
 }
 
 // Updates the camera's projection matrix
-void Camera::UpdateProjectionMatrix(float aspectRatio)
+void Camera::UpdateProjectionMatrix(float viewWidth, float viewHeight)
 {
-	XMStoreFloat4x4(&projection, XMMatrixPerspectiveFovLH(fov * (PI / 180.0f), aspectRatio, nearClip, farClip));
+	XMStoreFloat4x4(&projection, camType == Perspective ? 
+		XMMatrixPerspectiveFovLH(fov * (PI / 180.0f), viewWidth/viewHeight, nearClip, farClip) :
+		XMMatrixOrthographicLH(viewWidth, viewHeight, nearClip, farClip));
 }
 
 // Update the camera's view matrix

@@ -18,7 +18,9 @@ public:
 	float moveSpeed;
 	float sensitivity;
 
-	Camera(float aspectRatio = 16.0f / 9.0f, 
+	Camera(CamType camType = Perspective,
+		float viewWidth = 1280.0f,
+		float viewHeight = 720.0f,
 		float fov = 80.0f,
 		float nearClip = 0.1f,
 		float farClip = 1000.0f,
@@ -32,7 +34,7 @@ public:
 	Transform& GetTransform();
 	DirectX::XMFLOAT4X4 GetView();
 	DirectX::XMFLOAT4X4 GetProjection();
-	void UpdateProjectionMatrix(float aspectRatio);
+	void UpdateProjectionMatrix(float viewWidth, float viewHeight);
 	void UpdateViewMatrix();
 
 private:

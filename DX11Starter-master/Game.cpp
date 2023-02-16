@@ -3,7 +3,6 @@
 #include "Input.h"
 #include "Helpers.h"
 #include "BufferStructs.h"
-#include "GameEntity.h"
 
 // This code assumes files are in "ImGui" subfolder!
 // Adjust as necessary for your own folder structure
@@ -120,9 +119,10 @@ void Game::Init()
 	device->CreateBuffer(&cbDesc, 0, vsConstantBuffer.GetAddressOf());
 
 	// Init the cameras
-	cams.push_back(std::make_shared<Camera>((float)windowWidth / (float)windowHeight, 80.0f, 0.1f, 1000.0f, XMFLOAT3(0, 0, -3.0f)));
-	cams.push_back(std::make_shared<Camera>((float)windowWidth / (float)windowHeight, 100.0f, 0.1f, 1000.0f, XMFLOAT3(3, 0, -3.0f), XMFLOAT3(-0.2f, 0, 0)));
-	cams.push_back(std::make_shared<Camera>((float)windowWidth / (float)windowHeight, 60.0f, 0.1f, 1000.0f, XMFLOAT3(-3, 0, -3.0f), XMFLOAT3(0.2f, 0, 0)));
+	cams.push_back(std::make_shared<Camera>(Perspective, (float)windowWidth, (float)windowHeight, 80.0f, 0.1f, 1000.0f, XMFLOAT3(0, 0, -3.0f)));
+	cams.push_back(std::make_shared<Camera>(Orthographic, (float)windowWidth, (float)windowHeight, 80.0f, 0.1f, 1000.0f, XMFLOAT3(0, 0, -3.0f)));
+	cams.push_back(std::make_shared<Camera>(Perspective, (float)windowWidth, (float)windowHeight, 100.0f, 0.1f, 1000.0f, XMFLOAT3(3, 0, -3.0f), XMFLOAT3(-0.2f, 0, 0)));
+	cams.push_back(std::make_shared<Camera>(Perspective, (float)windowWidth, (float)windowHeight, 60.0f, 0.1f, 1000.0f, XMFLOAT3(-3, 0, -3.0f), XMFLOAT3(0.2f, 0, 0)));
 
 	camIndex = 0;
 	activeCam = cams[camIndex];
@@ -293,7 +293,7 @@ void Game::OnResize()
 	DXCore::OnResize();
 
 	for (std::shared_ptr<Camera> cam : cams)
-		cam->UpdateProjectionMatrix((float)windowWidth/(float)windowHeight);
+		cam->UpdateProjectionMatrix((float)windowWidth, (float)windowHeight);
 }
 
 // --------------------------------------------------------
