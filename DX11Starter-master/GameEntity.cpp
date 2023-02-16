@@ -22,11 +22,14 @@ Transform* GameEntity::GetTransform()
 void GameEntity::Draw(
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer,
+	shared_ptr<Camera> camPtr,
 	XMFLOAT4 color)
 {
 	VertexShaderExternalData vsData = {};
 	vsData.colorTint = color;
 	vsData.worldMatrix = transform.GetWorldMatrix();
+	vsData.viewMatrix = camPtr->GetView();
+	vsData.projMatrix = camPtr->GetProjection();
 
 	// Holds a pointer to the resource's memory after mapping occurs
 	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};

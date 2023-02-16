@@ -3,6 +3,7 @@
 #include <memory>
 #include "Transform.h"
 #include "Mesh.h"
+#include "Camera.h"
 
 class GameEntity
 {
@@ -21,5 +22,6 @@ public:
 	void Draw(
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
 		Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer,
+		std::shared_ptr<Camera> camPtr,
 		DirectX::XMFLOAT4 color);
 };

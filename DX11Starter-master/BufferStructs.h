@@ -6,9 +6,6 @@ struct VertexShaderExternalData
 {
 	DirectX::XMFLOAT4 colorTint;
 	DirectX::XMFLOAT4X4 worldMatrix;
-};
-
-struct PixelShaderExternalData
-{
-	DirectX::XMINT2 mousePos;
+	DirectX::XMFLOAT4X4 viewMatrix;
+	DirectX::XMFLOAT4X4 projMatrix;
 };

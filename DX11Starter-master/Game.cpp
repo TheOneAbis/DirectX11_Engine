@@ -119,12 +119,13 @@ void Game::Init()
 	// Create the constant buffer
 	device->CreateBuffer(&cbDesc, 0, vsConstantBuffer.GetAddressOf());
 
-	// Set size to pixel buffer struct size and create the cbuf for mouse position
-	size = (sizeof(PixelShaderExternalData) + 15) / 16 * 16;
-	cbDesc.ByteWidth = size;
+	// Init the cameras
+	cams.push_back(std::make_shared<Camera>((float)windowWidth / (float)windowHeight, 80.0f, 0.1f, 1000.0f, XMFLOAT3(0, 0, -3.0f)));
+	cams.push_back(std::make_shared<Camera>((float)windowWidth / (float)windowHeight, 100.0f, 0.1f, 1000.0f, XMFLOAT3(3, 0, -3.0f), XMFLOAT3(-0.2f, 0, 0)));
+	cams.push_back(std::make_shared<Camera>((float)windowWidth / (float)windowHeight, 60.0f, 0.1f, 1000.0f, XMFLOAT3(-3, 0, -3.0f), XMFLOAT3(0.2f, 0, 0)));
 
-	// Create the pixel constant buffer
-	device->CreateBuffer(&cbDesc, 0, psConstantBuffer.GetAddressOf());
+	camIndex = 0;
+	activeCam = cams[camIndex];
 }
 
 // --------------------------------------------------------
@@ -290,6 +291,9 @@ void Game::OnResize()
 {
 	// Handle base-level DX resize stuff
 	DXCore::OnResize();
+
+	for (std::shared_ptr<Camera> cam : cams)
+		cam->UpdateProjectionMatrix((float)windowWidth/(float)windowHeight);
 }
 
 // --------------------------------------------------------
@@ -304,14 +308,8 @@ void Game::Update(float deltaTime, float totalTime)
 	gameObjects[5].GetTransform()->Rotate(0, 0, deltaTime / 3);
 	gameObjects[4].GetTransform()->Rotate(0, 0, -deltaTime / 3);
 
-	// Create pixel shader cbuffer and map the mouse position to the PixelShaderConstantBuffer
-	PixelShaderExternalData psData = {};
-	psData.mousePos = XMINT2(Input::GetInstance().GetMouseX(), Input::GetInstance().GetMouseY());
-	D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
-	context->Map(psConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
-	memcpy(mappedBuffer.pData, &psData, sizeof(psData));
-	context->Unmap(psConstantBuffer.Get(), 0);
-	context->PSSetConstantBuffers(1, 1, psConstantBuffer.GetAddressOf());
+	activeCam->Update(deltaTime);
+	activeCam->UpdateViewMatrix();
 
 	// Update UI
 	this->UpdateUI(deltaTime);
@@ -348,6 +346,18 @@ void Game::UpdateUI(float deltaTime)
 	ImGui::Text("Window Height: %i", this->windowHeight);
 	// for editing vectors, use pointer to first element of it
 	ImGui::ColorEdit4("World Color Tint", &screenTint.x);
+
+	// Camera details
+	if (ImGui::Button("Next Camera", ImVec2(150, 25)))
+	{
+		camIndex = (++camIndex) % cams.size();
+		activeCam = cams[camIndex];
+	}
+	if (ImGui::Button("Previous Camera", ImVec2(150, 25)))
+	{
+		camIndex = (--camIndex) % cams.size();
+		activeCam = cams[camIndex];
+	}
 	ImGui::End();
 
 	// Game Object Inspector
@@ -362,6 +372,20 @@ void Game::UpdateUI(float deltaTime)
 			ImGui::DragFloat3("Scale: ", &gameObjects[i].GetTransform()->GetScale().x, 0.01f);
 			ImGui::TreePop();
 		}
+	}
+	if (ImGui::TreeNode((void*)(intptr_t)6, "Active Camera (%d)", camIndex))
+	{
+		ImGui::Text("Position: %f, %f, %f", 
+			activeCam->GetTransform().GetPosition().x,
+			activeCam->GetTransform().GetPosition().y,
+			activeCam->GetTransform().GetPosition().z);
+		ImGui::Text("Rotation: %f, %f, %f",
+			activeCam->GetTransform().GetPitchYawRoll().x,
+			activeCam->GetTransform().GetPitchYawRoll().y,
+			activeCam->GetTransform().GetPitchYawRoll().z);
+		ImGui::Text("Field of View: %f",
+			activeCam->fov);
+		ImGui::TreePop();
 	}
 	ImGui::End();
 }
@@ -385,7 +409,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	// Render Game entities
 	for (GameEntity& gameObject : gameObjects)
-		gameObject.Draw(context, vsConstantBuffer, screenTint);
+		gameObject.Draw(context, vsConstantBuffer, activeCam, screenTint);
 
 	// Render the UI
 	ImGui::Render();

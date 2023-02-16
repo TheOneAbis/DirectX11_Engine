@@ -1,9 +1,3 @@
-// I am experimenting let me be
-cbuffer PixelExternalData : register(b1)
-{
-	int2 mousePos;
-}
-
 // Struct representing the data we expect to receive from earlier pipeline stages
 // - Should match the output of our corresponding vertex shader
 // - The name of the struct itself is unimportant
@@ -31,10 +25,6 @@ struct VertexToPixel
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	float radius = 20.0f;
-	// this is a terrible idea
-	if (distance(input.screenPosition, mousePos) < radius) input.color = float4(1, 1, 1, 1);
-
 	// Just return the input color
 	// - This color (like most values passing through the rasterizer) is 
 	//   interpolated for each pixel between the corresponding vertices 
