@@ -22,11 +22,9 @@ Transform* GameEntity::GetTransform()
 void GameEntity::Draw(
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer,
-	shared_ptr<Camera> camPtr,
-	XMFLOAT4 color)
+	shared_ptr<Camera> camPtr)
 {
 	VertexShaderExternalData vsData = {};
-	vsData.colorTint = color;
 	vsData.worldMatrix = transform.GetWorldMatrix();
 	vsData.viewMatrix = camPtr->GetView();
 	vsData.projMatrix = camPtr->GetProjection();

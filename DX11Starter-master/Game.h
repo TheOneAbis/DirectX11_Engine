@@ -1,10 +1,11 @@
 #pragma once
 
-#include "DXCore.h"
-#include "GameEntity.h"
 #include <wrl/client.h> // Used for ComPtr - a smart pointer for COM objects
 #include <vector>
 #include <memory>
+#include "DXCore.h"
+#include "GameEntity.h"
+#include "SimpleShader.h"
 
 class Game 
 	: public DXCore
@@ -40,12 +41,8 @@ private:
 	int camIndex;
 	
 	// Shaders and shader-related constructs
-	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
-	Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
-	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
+	std::shared_ptr<SimplePixelShader> pixelShader;
+	std::shared_ptr<SimpleVertexShader> vertexShader;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer;
-
-	// Screen offsets and color tints
-	DirectX::XMFLOAT4 screenTint;
 };
 
