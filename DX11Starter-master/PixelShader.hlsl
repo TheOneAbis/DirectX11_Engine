@@ -35,5 +35,5 @@ float4 main(VertexToPixel input) : SV_TARGET
 
 	float d = distance(center, p) / 10;
 
-	return float4(sin(d), cos(d),tan(d), 1);
+	return input.color * float4(sin(d), cos(d),tan(d), 1);
 }

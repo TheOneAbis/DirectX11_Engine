@@ -2,7 +2,6 @@
 #include "Vertex.h"
 #include "Input.h"
 #include "Helpers.h"
-#include "BufferStructs.h"
 
 // This code assumes files are in "ImGui" subfolder!
 // Adjust as necessary for your own folder structure
@@ -40,6 +39,8 @@ Game::Game(HINSTANCE hInstance)
 	CreateConsoleWindow(500, 120, 32, 120);
 	printf("Console window created successfully.  Feel free to printf() here.\n");
 #endif
+
+	camIndex = 0;
 }
 
 // --------------------------------------------------------
@@ -79,6 +80,12 @@ void Game::Init()
 	// geometry to draw and some simple camera matrices.
 	//  - You'll be expanding and/or replacing these later
 	LoadShaders();
+
+	// Create materials
+	mat1 = std::make_shared<Material>(XMFLOAT4(1, 0, 1, 1), vertexShader, pixelShader);
+	mat2 = std::make_shared<Material>(XMFLOAT4(0, 1, 1, 1), vertexShader, pixelShader);
+	mat3 = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), vertexShader, pixelShader);
+
 	CreateGeometry();
 	
 	// Set initial graphics API state
@@ -92,19 +99,19 @@ void Game::Init()
 		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	}
 
-	// Get size as the next multiple of 16 (instead of hardcoding a size here)
-	unsigned int size = sizeof(VertexShaderExternalData);
-	size = (size + 15) / 16 * 16; // This will work even if the struct size changes
+	//// Get size as the next multiple of 16 (instead of hardcoding a size here)
+	//unsigned int size = sizeof(VertexShaderExternalData);
+	//size = (size + 15) / 16 * 16; // This will work even if the struct size changes
 
-	// Describe the constant buffer
-	D3D11_BUFFER_DESC cbDesc = {}; // Sets struct to all zeros
-	cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	cbDesc.ByteWidth = size; // Must be a multiple of 16
-	cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+	//// Describe the constant buffer
+	//D3D11_BUFFER_DESC cbDesc = {}; // Sets struct to all zeros
+	//cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	//cbDesc.ByteWidth = size; // Must be a multiple of 16
+	//cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	//cbDesc.Usage = D3D11_USAGE_DYNAMIC;
 
 	// Create the constant buffer
-	device->CreateBuffer(&cbDesc, 0, vsConstantBuffer.GetAddressOf());
+	//device->CreateBuffer(&cbDesc, 0, vsConstantBuffer.GetAddressOf());
 
 	// Init the cameras
 	cams.push_back(std::make_shared<Camera>(Perspective, (float)windowWidth, (float)windowHeight, 80.0f, 0.1f, 1000.0f, XMFLOAT3(0, 0, -3.0f)));
@@ -112,7 +119,6 @@ void Game::Init()
 	cams.push_back(std::make_shared<Camera>(Perspective, (float)windowWidth, (float)windowHeight, 100.0f, 0.1f, 1000.0f, XMFLOAT3(3, 0, -3.0f), XMFLOAT3(-0.2f, 0, 0)));
 	cams.push_back(std::make_shared<Camera>(Perspective, (float)windowWidth, (float)windowHeight, 60.0f, 0.1f, 1000.0f, XMFLOAT3(-3, 0, -3.0f), XMFLOAT3(0.2f, 0, 0)));
 
-	camIndex = 0;
 	activeCam = cams[camIndex];
 }
 
@@ -185,6 +191,7 @@ void Game::LoadShaders()
 	//		inputLayout.GetAddressOf());			// Address of the resulting ID3D11InputLayout pointer
 	//}
 
+	// Make the shaders with SimpleShader
 	vertexShader = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"VertexShader.cso").c_str());
 	pixelShader = std::make_shared<SimplePixelShader>(device, context, FixPath(L"PixelShader.cso").c_str());
 }
@@ -204,6 +211,9 @@ void Game::CreateGeometry()
 	XMFLOAT4 black = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
 	XMFLOAT4 white = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 
+	XMFLOAT3 defaultNormal = XMFLOAT3(0, 0, -1);
+	XMFLOAT2 defaultUV = XMFLOAT2(0, 0);
+
 	// Set up the vertices of the triangle we would like to draw
 	// - We're going to copy this array, exactly as it exists in CPU memory
 	//    over to a Direct3D-controlled data structure on the GPU (the vertex buffer)
@@ -218,25 +228,25 @@ void Game::CreateGeometry()
 	//    since we're describing the triangle in terms of the window itself
 	Vertex vertices[] =
 	{
-		{ XMFLOAT3(+0.0f, +0.5f, +0.0f), red },
-		{ XMFLOAT3(+0.5f, -0.5f, +0.0f), blue },
-		{ XMFLOAT3(-0.5f, -0.5f, +0.0f), green },
+		{ XMFLOAT3(+0.0f, +0.5f, +0.0f), defaultNormal, defaultUV },
+		{ XMFLOAT3(+0.5f, -0.5f, +0.0f), defaultNormal, defaultUV },
+		{ XMFLOAT3(-0.5f, -0.5f, +0.0f), defaultNormal, defaultUV },
 	};
 	Vertex rectVertices[] =
 	{
-		{ XMFLOAT3(-0.9f, -0.4f, +0.0f), red }, // top left
-		{ XMFLOAT3(-0.4f, -0.4f, +0.0f), blue }, // top right
-		{ XMFLOAT3(-0.4f, -0.9f, +0.0f), green }, // bottom right
-		{ XMFLOAT3(-0.9f, -0.9f, +0.0f), XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f) } // bottom left
+		{ XMFLOAT3(-0.9f, -0.4f, +0.0f), defaultNormal, defaultUV }, // top left
+		{ XMFLOAT3(-0.4f, -0.4f, +0.0f), defaultNormal, defaultUV }, // top right
+		{ XMFLOAT3(-0.4f, -0.9f, +0.0f), defaultNormal, defaultUV }, // bottom right
+		{ XMFLOAT3(-0.9f, -0.9f, +0.0f), defaultNormal, defaultUV }  // bottom left
 	};
 	Vertex weirdVertices[] =
 	{
-		{ XMFLOAT3(+0.2f, +0.9f, +0.0f), black },
-		{ XMFLOAT3(+0.7f, +0.9f, +0.0f), black },
-		{ XMFLOAT3(+0.8f, +0.8f, +0.0f), white },
-		{ XMFLOAT3(+0.7f, +0.7f, +0.0f), white },
-		{ XMFLOAT3(+0.2f, +0.7f, +0.0f), white },
-		{ XMFLOAT3(+0.1f, +0.8f, +0.0f), black }
+		{ XMFLOAT3(+0.2f, +0.9f, +0.0f), defaultNormal, defaultUV },
+		{ XMFLOAT3(+0.7f, +0.9f, +0.0f), defaultNormal, defaultUV },
+		{ XMFLOAT3(+0.8f, +0.8f, +0.0f), defaultNormal, defaultUV },
+		{ XMFLOAT3(+0.7f, +0.7f, +0.0f), defaultNormal, defaultUV },
+		{ XMFLOAT3(+0.2f, +0.7f, +0.0f), defaultNormal, defaultUV },
+		{ XMFLOAT3(+0.1f, +0.8f, +0.0f), defaultNormal, defaultUV }
 	};
 
 	// Set up indices, which tell us which vertices to use and in which order
@@ -259,17 +269,16 @@ void Game::CreateGeometry()
 	};
 
 	// Create the meshes
-	meshes.push_back(std::make_shared<Mesh>(vertices, 3, indices, 3, device, context));
-	meshes.push_back(std::make_shared<Mesh>(rectVertices, 4, rectIndices, 6, device, context));
-	meshes.push_back(std::make_shared<Mesh>(weirdVertices, 6, weirdIndices, 12, device, context));
+	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/sphere.obj").c_str(), device, context));
+	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/cube.obj").c_str(), device, context));
+	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/cylinder.obj").c_str(), device, context));
+	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/helix.obj").c_str(), device, context));
 
 	// Create the game objects
-	gameObjects.push_back(GameEntity(meshes[0]));
-	gameObjects.push_back(GameEntity(meshes[1]));
-	gameObjects.push_back(GameEntity(meshes[1]));
-	gameObjects.push_back(GameEntity(meshes[2]));
-	gameObjects.push_back(GameEntity(meshes[2]));
-	gameObjects.push_back(GameEntity(meshes[2]));
+	gameObjects.push_back(GameEntity(meshes[0], mat1));
+	gameObjects.push_back(GameEntity(meshes[1], mat1));
+	gameObjects.push_back(GameEntity(meshes[2], mat2));
+	gameObjects.push_back(GameEntity(meshes[3], mat3));
 }
 
 
@@ -296,8 +305,7 @@ void Game::Update(float deltaTime, float totalTime)
 	gameObjects[0].GetTransform()->Rotate(0, 0, deltaTime);
 	gameObjects[2].GetTransform()->SetScale(sinf(totalTime) + 1, 1, 1);
 	gameObjects[1].GetTransform()->MoveAbsolute(deltaTime / 10, deltaTime / 10, 0);
-	gameObjects[5].GetTransform()->Rotate(0, 0, deltaTime / 3);
-	gameObjects[4].GetTransform()->Rotate(0, 0, -deltaTime / 3);
+	gameObjects[3].GetTransform()->Rotate(0, 0, deltaTime / 3);
 
 	activeCam->Update(deltaTime);
 	activeCam->UpdateViewMatrix();
@@ -398,7 +406,7 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	// Render Game entities
 	for (GameEntity& gameObject : gameObjects)
-		gameObject.Draw(context, vsConstantBuffer, activeCam);
+		gameObject.Draw(context, activeCam);
 
 	// Render the UI
 	ImGui::Render();

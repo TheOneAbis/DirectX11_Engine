@@ -17,6 +17,11 @@ private:
 	// Hold num indices in index buffer
 	unsigned int indexCount;
 
+	void CreateBuffers(Vertex* vertices, 
+		unsigned int numVerts, 
+		unsigned int* indices,
+		Microsoft::WRL::ComPtr<ID3D11Device> device);
+
 public:
 
 	Mesh(Vertex* vertices, 
@@ -25,6 +30,11 @@ public:
 		unsigned int numIndices, 
 		Microsoft::WRL::ComPtr<ID3D11Device> device,
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+
+	Mesh(const wchar_t* fileName,
+		Microsoft::WRL::ComPtr<ID3D11Device> device,
+		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+
 	~Mesh();
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> GetVertexBuffer();
