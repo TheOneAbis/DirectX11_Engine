@@ -1,3 +1,8 @@
+cbuffer ExternalData : register(b0)
+{
+	float time;
+}
+
 // Struct representing the data we expect to receive from earlier pipeline stages
 // - Should match the output of our corresponding vertex shader
 // - The name of the struct itself is unimportant
@@ -25,9 +30,10 @@ struct VertexToPixel
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	// Just return the input color
-	// - This color (like most values passing through the rasterizer) is 
-	//   interpolated for each pixel between the corresponding vertices 
-	//   of the triangle we're rendering
-	return input.color;
+	float2 center = float2(500, 400);
+	float2 p = input.screenPosition.xy;
+
+	float d = distance(center, p) / 10;
+
+	return float4(sin(d), cos(d),tan(d), 1);
 }
