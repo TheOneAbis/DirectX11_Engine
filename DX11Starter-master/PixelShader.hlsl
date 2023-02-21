@@ -1,6 +1,8 @@
 cbuffer ExternalData : register(b0)
 {
-	float time;
+	float3 ambientColor;
+	float3 lightDir;
+	float3 lightColor;
 }
 
 // Struct representing the data we expect to receive from earlier pipeline stages
@@ -17,6 +19,8 @@ struct VertexToPixel
 	//  v    v                v
 	float4 screenPosition	: SV_POSITION;
 	float4 color			: COLOR;
+	float3 normal           : NORMAL;
+	float2 uv               : TEXCOORD;
 };
 
 // --------------------------------------------------------
@@ -30,10 +34,11 @@ struct VertexToPixel
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	float2 center = float2(500, 400);
-	float2 p = input.screenPosition.xy;
+	// Compare the light's direction and the surface direction
+	// -lightDir = direction to light
+	float shadingResult = dot(input.normal, -lightDir);
 
-	float d = distance(center, p) / 10;
+	float3 totalLightColor = ambientColor + lightColor * shadingResult;
 
-	return input.color * float4(sin(d), cos(d),tan(d), 1);
+	return float4(totalLightColor, 1);
 }

@@ -279,6 +279,9 @@ void Game::CreateGeometry()
 	gameObjects.push_back(GameEntity(meshes[1], mat1));
 	gameObjects.push_back(GameEntity(meshes[2], mat2));
 	gameObjects.push_back(GameEntity(meshes[3], mat3));
+	gameObjects[0].GetTransform()->SetPosition(-1.5f, -1, -1);
+	gameObjects[2].GetTransform()->SetPosition(-2, 2, 1);
+	gameObjects[3].GetTransform()->SetPosition(3, -2, -2);
 }
 
 
@@ -404,9 +407,20 @@ void Game::Draw(float deltaTime, float totalTime)
 		context->ClearDepthStencilView(depthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
 
+	XMFLOAT3 ambientColor = { 0.75f, 0.75f, 0.75f };
+	XMFLOAT3 lightDir = { 1, 0, 0 };
+	XMFLOAT3 lightColor = { 0, 1, 0 };
+
 	// Render Game entities
 	for (GameEntity& gameObject : gameObjects)
+	{
+		std::shared_ptr<SimplePixelShader> ps = gameObject.GetMaterial()->GetPS();
+		ps->SetFloat3("ambientColor", ambientColor);
+		ps->SetFloat3("lightDir", lightDir);
+		ps->SetFloat3("lightColor", lightColor);
+		ps->CopyAllBufferData();
 		gameObject.Draw(context, activeCam);
+	}
 
 	// Render the UI
 	ImGui::Render();

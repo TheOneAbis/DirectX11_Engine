@@ -23,6 +23,8 @@ Mesh::Mesh(const wchar_t* fileName,
 	Microsoft::WRL::ComPtr<ID3D11Device> device,
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
+	this->context = context;
+	this->indexCount = 0;
 	// Author: Chris Cascioli
 	// Purpose: Basic .OBJ 3D model loading, supporting positions, uvs and normals
 	// 
@@ -224,7 +226,6 @@ Mesh::Mesh(const wchar_t* fileName,
 
 	// Close the file and create the actual buffers
 	obj.close();
-	this->context = context;
 	this->indexCount = indexCounter;
 	CreateBuffers(&verts[0], vertCounter, &indices[0], device);
 
