@@ -23,8 +23,14 @@ Transform::Transform()
 
 void Transform::UpdateMatrices()
 {
+	// Translation matrix
 	XMMATRIX t = XMMatrixTranslation(position.x, position.y, position.z);
-	XMMATRIX r = XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
+
+	// Rotation matrix (from quaternion)
+	XMVECTOR quatVec = XMQuaternionRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
+	XMMATRIX r = XMMatrixRotationQuaternion(quatVec);
+
+	// Scale matrix
 	XMMATRIX s = XMMatrixScaling(scale.x, scale.y, scale.z);
 
 	XMMATRIX world = XMMatrixMultiply(XMMatrixMultiply(s, r), t);
