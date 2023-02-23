@@ -1,9 +1,34 @@
 cbuffer ExternalData : register(b0)
 {
-    float4 colorTint;
+    float3 colorTint;
 	float3 ambientColor;
+
 	float3 lightDir;
 	float3 lightColor;
+
+	float3 light2Dir;
+	float3 light2Color;
+
+	float3 cameraPosition;
+}
+
+float DiffuseBRDF(float3 normal, float3 dirToLight)
+{
+	// saturate(x) clamps a value between 0 and 1 (so it's a glorified clamp(x, 0, 1) basically)
+	return saturate(dot(normal, dirToLight));
+}
+
+float SpecularBRDF(float3 normal, float3 lightDir, float3 viewVector)
+{
+	// Get reflection of light bounsing off the surface 
+	float3 refl = reflect(lightDir, normal);
+
+	// Compare reflection against view vector, raising it to
+	// a very high power to ensure the falloff to zero is quick
+	float specular = saturate(dot(refl, viewVector));
+	specular = pow(specular, 80);
+
+	return specular;
 }
 
 // Struct representing the data we expect to receive from earlier pipeline stages
@@ -21,6 +46,7 @@ struct VertexToPixel
 	float4 screenPosition	: SV_POSITION;
 	float3 normal           : NORMAL;
 	float2 uv               : TEXCOORD;
+	float3 worldPosition    : POSITION;
 };
 
 // --------------------------------------------------------
@@ -34,11 +60,22 @@ struct VertexToPixel
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
-	// Compare the light's direction and the surface direction
-	// -lightDir = direction to light
-	float shadingResult = dot(input.normal, -lightDir);
+	// MUST re-normalize any interpolated vectors (rasterizer interpolates individual floats)
+	input.normal = normalize(input.normal);
 
-	float3 totalLightColor = ambientColor + lightColor * shadingResult;
+	// Calculate vector from surface to camera
+	float3 viewVector = normalize(cameraPosition - input.worldPosition);
+
+	// Start our light total off with just ambient
+	float3 totalLightColor = ambientColor;
 	
-    return float4(totalLightColor, 1) * colorTint;
+	// Calculate light 1
+	totalLightColor += DiffuseBRDF(input.normal, -lightDir) * lightColor * colorTint;
+	totalLightColor += SpecularBRDF(input.normal, lightDir, viewVector) * lightColor;
+
+	// Calculate light 2
+	totalLightColor += DiffuseBRDF(input.normal, -light2Dir) * light2Color * colorTint;
+	totalLightColor += SpecularBRDF(input.normal, light2Dir, viewVector) * light2Color;
+
+    return float4(totalLightColor, 1);
 }

@@ -282,10 +282,10 @@ void Game::CreateGeometry()
 	gameObjects.push_back(GameEntity(meshes[2], mat3));
 	gameObjects.push_back(GameEntity(meshes[3], mat1));
 	uniqueObj = GameEntity(meshes[0], customMat);
-	uniqueObj.GetTransform()->SetPosition(-2, 3, 0);
-	gameObjects[0].GetTransform()->SetPosition(-1.5f, -1, -1);
-	gameObjects[2].GetTransform()->SetPosition(-2, 2, 1);
-	gameObjects[3].GetTransform()->SetPosition(3, -2, -2);
+	uniqueObj.GetTransform()->SetPosition(-4, 0, 0);
+	gameObjects[0].GetTransform()->SetPosition(-8, 0, 0);
+	gameObjects[2].GetTransform()->SetPosition(4, 0, 0);
+	gameObjects[3].GetTransform()->SetPosition(8, 0, 0);
 }
 
 
@@ -310,8 +310,8 @@ void Game::Update(float deltaTime, float totalTime)
 {
 	// Do funny transformations on game objects
 	gameObjects[0].GetTransform()->Rotate(0, 0, deltaTime);
-	gameObjects[2].GetTransform()->SetScale(sinf(totalTime) + 1, 1, 1);
-	gameObjects[1].GetTransform()->MoveAbsolute(deltaTime / 10, deltaTime / 10, 0);
+	gameObjects[2].GetTransform()->Rotate(0, 0, deltaTime * 2);
+	gameObjects[1].GetTransform()->MoveAbsolute(sinf(deltaTime / 10), 0, 0);
 	gameObjects[3].GetTransform()->Rotate(0, 0, deltaTime / 3);
 
 	activeCam->Update(deltaTime);
@@ -411,9 +411,11 @@ void Game::Draw(float deltaTime, float totalTime)
 		context->ClearDepthStencilView(depthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
 
-	XMFLOAT3 ambientColor = { 0.75f, 0.75f, 0.75f };
+	XMFLOAT3 ambientColor = { 0.1f, 0.1f, 0.1f };
 	XMFLOAT3 lightDir = { 1, 0, 0 };
 	XMFLOAT3 lightColor = { 0, 1, 0 };
+	XMFLOAT3 light2Dir = { -1, 0, 0 };
+	XMFLOAT3 light2Color = { 1, 1, 1 };
 	XMFLOAT2 mousePos = XMFLOAT2((float)Input::GetInstance().GetMouseX(), (float)Input::GetInstance().GetMouseY());
 
 	// Render Game entities
@@ -423,6 +425,9 @@ void Game::Draw(float deltaTime, float totalTime)
 		ps->SetFloat3("ambientColor", ambientColor);
 		ps->SetFloat3("lightDir", lightDir);
 		ps->SetFloat3("lightColor", lightColor);
+		ps->SetFloat3("light2Dir", light2Dir);
+		ps->SetFloat3("light2Color", light2Color);
+		ps->SetFloat3("cameraPosition", activeCam->GetTransform().GetPosition());
 		gameObject.Draw(context, activeCam);
 	}
 	
