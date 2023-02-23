@@ -52,7 +52,7 @@ float4 main(VertexToPixel input) : SV_TARGET
     float negTanOffset = (abs(input.uv.y - negTanFunc) * 8);
     float secOffset = (abs(input.uv.y - secFunc) * 5);
     
-    float4 shadingNoHover = float4(tanOffset, negTanOffset, secOffset, 1) * shadeValue;
+    float4 shadingNoHover = float4(tanOffset, negTanOffset, secOffset, 1);
     
     return lerp(shadingNoHover, shadingHover, mouseOverEffect);
 }
