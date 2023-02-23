@@ -3,6 +3,12 @@
 using namespace std;
 using namespace DirectX;
 
+GameEntity::GameEntity()
+{
+	this->mesh = nullptr;
+	this->material = nullptr;
+}
+
 GameEntity::GameEntity(shared_ptr<Mesh> mesh, shared_ptr<Material> material)
 {
 	this->mesh = mesh;
@@ -38,13 +44,16 @@ void GameEntity::Draw(
 	material->GetPS()->SetShader();
 
 	std::shared_ptr<SimpleVertexShader> vs = material->GetVS();
-	vs->SetFloat4("colorTint", material->GetColor()); // Strings here MUST
-	vs->SetMatrix4x4("world", transform.GetWorldMatrix()); // match variable
-	vs->SetMatrix4x4("view", camPtr->GetView()); // names in your
+	vs->SetMatrix4x4("world", transform.GetWorldMatrix()); // Strings here MUST 
+	vs->SetMatrix4x4("view", camPtr->GetView()); // match variable names in your
 	vs->SetMatrix4x4("projection", camPtr->GetProjection()); // shader’s cbuffer!
 
 	vs->CopyAllBufferData(); // Adjust “vs” variable name if necessary
 
+	std::shared_ptr<SimplePixelShader> ps = material->GetPS();
+	ps->SetFloat4("colorTint", material->GetColor()); 
+
+	ps->CopyAllBufferData();
 	//VertexShaderExternalData vsData = {};
 	//vsData.worldMatrix = transform.GetWorldMatrix();
 	//vsData.viewMatrix = camPtr->GetView();

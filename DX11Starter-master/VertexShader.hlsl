@@ -4,7 +4,6 @@ cbuffer ExternalData : register(b0)
 	matrix world;
 	matrix view;
 	matrix projection;
-    float4 colorTint;
 }
 
 // Struct representing a single vertex worth of data
@@ -37,7 +36,6 @@ struct VertexToPixel
 	//  |    |                |
 	//  v    v                v
 	float4 screenPosition	: SV_POSITION;	// XYZW position (System Value Position)
-	float4 color			: COLOR;        // RGBA color
 	float3 normal           : NORMAL;       // Normal
 	float2 uv               : TEXCOORD;
 };
@@ -66,11 +64,6 @@ VertexToPixel main( VertexShaderInput input )
 	// Multiply the three matrices together first
 	matrix wvp = mul(projection, mul(view, world));
 	output.screenPosition = mul(wvp, float4(input.localPosition, 1.0f));
-
-	// Pass the color through 
-	// - The values will be interpolated per-pixel by the rasterizer
-	// - We don't need to alter it here, but we do need to send it to the pixel shader
-	output.color = colorTint;
 
 	// This normal is in LOCAL space, not WORLD space
 	// To go from local -> world, we need a world matrix (specifically its rotation and scale components)

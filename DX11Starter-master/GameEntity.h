@@ -15,6 +15,7 @@ private:
 
 public:
 
+	GameEntity();
 	GameEntity(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material);
 
 	std::shared_ptr<Mesh> GetMesh();

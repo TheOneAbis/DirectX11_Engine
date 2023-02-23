@@ -35,16 +35,14 @@ private:
 	//  - More info here: https://github.com/Microsoft/DirectXTK/wiki/ComPtr
 
 	std::vector<GameEntity> gameObjects;
+	GameEntity uniqueObj;
 	std::vector<std::shared_ptr<Mesh>> meshes;
 	std::vector<std::shared_ptr<Camera>> cams;
 	std::shared_ptr<Camera> activeCam;
 	int camIndex;
-
-	// Materials
-	std::shared_ptr<Material> mat1, mat2, mat3;
 	
 	// Shaders and shader-related constructs
-	std::shared_ptr<SimplePixelShader> pixelShader;
+	std::shared_ptr<SimplePixelShader> pixelShader, customPS;
 	std::shared_ptr<SimpleVertexShader> vertexShader;
 	//Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer;
 };

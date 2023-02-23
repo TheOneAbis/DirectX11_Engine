@@ -1,5 +1,6 @@
 cbuffer ExternalData : register(b0)
 {
+    float4 colorTint;
 	float3 ambientColor;
 	float3 lightDir;
 	float3 lightColor;
@@ -18,7 +19,6 @@ struct VertexToPixel
 	//  |    |                |
 	//  v    v                v
 	float4 screenPosition	: SV_POSITION;
-	float4 color			: COLOR;
 	float3 normal           : NORMAL;
 	float2 uv               : TEXCOORD;
 };
@@ -39,6 +39,6 @@ float4 main(VertexToPixel input) : SV_TARGET
 	float shadingResult = dot(input.normal, -lightDir);
 
 	float3 totalLightColor = ambientColor + lightColor * shadingResult;
-
-	return float4(totalLightColor, 1);
+	
+    return float4(totalLightColor, 1) * colorTint;
 }

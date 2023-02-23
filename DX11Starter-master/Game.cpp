@@ -81,11 +81,6 @@ void Game::Init()
 	//  - You'll be expanding and/or replacing these later
 	LoadShaders();
 
-	// Create materials
-	mat1 = std::make_shared<Material>(XMFLOAT4(1, 0, 1, 1), vertexShader, pixelShader);
-	mat2 = std::make_shared<Material>(XMFLOAT4(0, 1, 1, 1), vertexShader, pixelShader);
-	mat3 = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), vertexShader, pixelShader);
-
 	CreateGeometry();
 	
 	// Set initial graphics API state
@@ -194,6 +189,7 @@ void Game::LoadShaders()
 	// Make the shaders with SimpleShader
 	vertexShader = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"VertexShader.cso").c_str());
 	pixelShader = std::make_shared<SimplePixelShader>(device, context, FixPath(L"PixelShader.cso").c_str());
+	customPS = std::make_shared<SimplePixelShader>(device, context, FixPath(L"CustomPS.cso").c_str());
 }
 
 
@@ -274,11 +270,19 @@ void Game::CreateGeometry()
 	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/cylinder.obj").c_str(), device, context));
 	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/helix.obj").c_str(), device, context));
 
+	// Create materials
+	std::shared_ptr<Material> mat1 = std::make_shared<Material>(XMFLOAT4(1, 0, 1, 1), vertexShader, pixelShader);
+	std::shared_ptr<Material> mat2 = std::make_shared<Material>(XMFLOAT4(0, 1, 1, 1), vertexShader, pixelShader);
+	std::shared_ptr<Material> mat3 = std::make_shared<Material>(XMFLOAT4(0, 1, 0, 1), vertexShader, pixelShader);
+	std::shared_ptr<Material> customMat = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), vertexShader, customPS);
+
 	// Create the game objects
 	gameObjects.push_back(GameEntity(meshes[0], mat1));
-	gameObjects.push_back(GameEntity(meshes[1], mat1));
-	gameObjects.push_back(GameEntity(meshes[2], mat2));
-	gameObjects.push_back(GameEntity(meshes[3], mat3));
+	gameObjects.push_back(GameEntity(meshes[1], mat2));
+	gameObjects.push_back(GameEntity(meshes[2], mat3));
+	gameObjects.push_back(GameEntity(meshes[3], mat1));
+	uniqueObj = GameEntity(meshes[0], customMat);
+	uniqueObj.GetTransform()->SetPosition(-2, 3, 0);
 	gameObjects[0].GetTransform()->SetPosition(-1.5f, -1, -1);
 	gameObjects[2].GetTransform()->SetPosition(-2, 2, 1);
 	gameObjects[3].GetTransform()->SetPosition(3, -2, -2);
@@ -410,6 +414,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	XMFLOAT3 ambientColor = { 0.75f, 0.75f, 0.75f };
 	XMFLOAT3 lightDir = { 1, 0, 0 };
 	XMFLOAT3 lightColor = { 0, 1, 0 };
+	XMFLOAT2 mousePos = XMFLOAT2((float)Input::GetInstance().GetMouseX(), (float)Input::GetInstance().GetMouseY());
 
 	// Render Game entities
 	for (GameEntity& gameObject : gameObjects)
@@ -418,9 +423,15 @@ void Game::Draw(float deltaTime, float totalTime)
 		ps->SetFloat3("ambientColor", ambientColor);
 		ps->SetFloat3("lightDir", lightDir);
 		ps->SetFloat3("lightColor", lightColor);
-		ps->CopyAllBufferData();
 		gameObject.Draw(context, activeCam);
 	}
+	
+	std::shared_ptr<SimplePixelShader> uniquePS = uniqueObj.GetMaterial()->GetPS();
+	uniquePS->SetFloat3("lightDir", lightDir);
+	uniquePS->SetFloat("time", totalTime);
+	uniquePS->SetFloat3("ambientColor", ambientColor);
+	uniquePS->SetFloat2("mousePos", mousePos);
+	uniqueObj.Draw(context, activeCam);
 
 	// Render the UI
 	ImGui::Render();
