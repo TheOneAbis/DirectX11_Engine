@@ -207,74 +207,17 @@ void Game::CreateGeometry()
 	XMFLOAT4 black = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
 	XMFLOAT4 white = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 
-	XMFLOAT3 defaultNormal = XMFLOAT3(0, 0, -1);
-	XMFLOAT2 defaultUV = XMFLOAT2(0, 0);
-
-	// Set up the vertices of the triangle we would like to draw
-	// - We're going to copy this array, exactly as it exists in CPU memory
-	//    over to a Direct3D-controlled data structure on the GPU (the vertex buffer)
-	// - Note: Since we don't have a camera or really any concept of
-	//    a "3d world" yet, we're simply describing positions within the
-	//    bounds of how the rasterizer sees our screen: [-1 to +1] on X and Y
-	// - This means (0,0) is at the very center of the screen.
-	// - These are known as "Normalized Device Coordinates" or "Homogeneous 
-	//    Screen Coords", which are ways to describe a position without
-	//    knowing the exact size (in pixels) of the image/window/etc.  
-	// - Long story short: Resizing the window also resizes the triangle,
-	//    since we're describing the triangle in terms of the window itself
-	Vertex vertices[] =
-	{
-		{ XMFLOAT3(+0.0f, +0.5f, +0.0f), defaultNormal, defaultUV },
-		{ XMFLOAT3(+0.5f, -0.5f, +0.0f), defaultNormal, defaultUV },
-		{ XMFLOAT3(-0.5f, -0.5f, +0.0f), defaultNormal, defaultUV },
-	};
-	Vertex rectVertices[] =
-	{
-		{ XMFLOAT3(-0.9f, -0.4f, +0.0f), defaultNormal, defaultUV }, // top left
-		{ XMFLOAT3(-0.4f, -0.4f, +0.0f), defaultNormal, defaultUV }, // top right
-		{ XMFLOAT3(-0.4f, -0.9f, +0.0f), defaultNormal, defaultUV }, // bottom right
-		{ XMFLOAT3(-0.9f, -0.9f, +0.0f), defaultNormal, defaultUV }  // bottom left
-	};
-	Vertex weirdVertices[] =
-	{
-		{ XMFLOAT3(+0.2f, +0.9f, +0.0f), defaultNormal, defaultUV },
-		{ XMFLOAT3(+0.7f, +0.9f, +0.0f), defaultNormal, defaultUV },
-		{ XMFLOAT3(+0.8f, +0.8f, +0.0f), defaultNormal, defaultUV },
-		{ XMFLOAT3(+0.7f, +0.7f, +0.0f), defaultNormal, defaultUV },
-		{ XMFLOAT3(+0.2f, +0.7f, +0.0f), defaultNormal, defaultUV },
-		{ XMFLOAT3(+0.1f, +0.8f, +0.0f), defaultNormal, defaultUV }
-	};
-
-	// Set up indices, which tell us which vertices to use and in which order
-	// - This is redundant for just 3 vertices, but will be more useful later
-	// - Indices are technically not required if the vertices are in the buffer 
-	//    in the correct order and each one will be used exactly once
-	// - But just to see how it's done...
-	unsigned int indices[] = { 0, 1, 2 };
-	unsigned int rectIndices[] = 
-	{ 
-		0, 1, 2, // tri 1
-		2, 3, 0  // tri 2
-	};
-	unsigned int weirdIndices[] =
-	{
-		0, 1, 3, // tri 1
-		1, 2, 3, // tri 2
-		0, 3, 4, // tri 3
-		0, 4, 5  // tri 4
-	};
-
 	// Create the meshes
 	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/sphere.obj").c_str(), device, context));
-	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/cube.obj").c_str(), device, context));
+	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/torus.obj").c_str(), device, context));
 	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/cylinder.obj").c_str(), device, context));
 	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/helix.obj").c_str(), device, context));
 
 	// Create materials
-	std::shared_ptr<Material> mat1 = std::make_shared<Material>(XMFLOAT4(1, 0, 1, 1), vertexShader, pixelShader);
-	std::shared_ptr<Material> mat2 = std::make_shared<Material>(XMFLOAT4(0, 1, 1, 1), vertexShader, pixelShader);
-	std::shared_ptr<Material> mat3 = std::make_shared<Material>(XMFLOAT4(0, 1, 0, 1), vertexShader, pixelShader);
-	std::shared_ptr<Material> customMat = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), vertexShader, customPS);
+	std::shared_ptr<Material> mat1 = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.01f, vertexShader, pixelShader);
+	std::shared_ptr<Material> mat2 = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.01f, vertexShader, pixelShader);
+	std::shared_ptr<Material> mat3 = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.5f, vertexShader, pixelShader);
+	std::shared_ptr<Material> customMat = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.1f, vertexShader, customPS);
 
 	// Create the game objects
 	gameObjects.push_back(GameEntity(meshes[0], mat1));
@@ -413,9 +356,9 @@ void Game::Draw(float deltaTime, float totalTime)
 
 	XMFLOAT3 ambientColor = { 0.1f, 0.1f, 0.1f };
 	XMFLOAT3 lightDir = { 1, 0, 0 };
-	XMFLOAT3 lightColor = { 0, 1, 0 };
+	XMFLOAT3 lightColor = { 1, 1, 1 };
 	XMFLOAT3 light2Dir = { -1, 0, 0 };
-	XMFLOAT3 light2Color = { 1, 1, 1 };
+	XMFLOAT3 light2Color = { 0, 0, 0 };
 	XMFLOAT2 mousePos = XMFLOAT2((float)Input::GetInstance().GetMouseX(), (float)Input::GetInstance().GetMouseY());
 
 	// Render Game entities

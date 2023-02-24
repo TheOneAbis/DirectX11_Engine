@@ -52,6 +52,7 @@ void GameEntity::Draw(
 
 	std::shared_ptr<SimplePixelShader> ps = material->GetPS();
 	ps->SetFloat4("colorTint", material->GetColor()); 
+	ps->SetFloat("specularAmt", material->GetSpecular());
 
 	ps->CopyAllBufferData();
 	//VertexShaderExternalData vsData = {};
@@ -64,7 +65,7 @@ void GameEntity::Draw(
 	//D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
 	//context->Map(vsConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
 
-	//// copy data from vsData into mapedBuffer
+	//// copy data from vsData into mappedBuffer
 	//memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));
 
 	//context->Unmap(vsConstantBuffer.Get(), 0);
