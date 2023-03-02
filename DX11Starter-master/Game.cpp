@@ -349,7 +349,7 @@ void Game::UpdateUI(float deltaTime)
 	ImGui::Begin("Hierarchy");
 	
 	// Game Objects
-	for (int i = 0; i < 6; i++)
+	for (int i = 0; i < gameObjects.size(); i++)
 	{
 		if (ImGui::TreeNode((void*)(intptr_t)i, "Game Object %d", i))
 		{
@@ -391,11 +391,11 @@ void Game::UpdateUI(float deltaTime)
 				ImGui::Text("Type: Point");
 				ImGui::DragFloat3("Position: ", &lights[i].Position.x, 0.01f);
 				break;
-				case LIGHT_TYPE_SPOT:
-					ImGui::Text("Type: Spot");
-					ImGui::DragFloat3("Position: ", &lights[i].Position.x, 0.01f);
-					ImGui::DragFloat3("Direction: ", &lights[i].Direction.x, 0.01f);
-					break;
+			case LIGHT_TYPE_SPOT:
+				ImGui::Text("Type: Spot");
+				ImGui::DragFloat3("Position: ", &lights[i].Position.x, 0.01f);
+				ImGui::DragFloat3("Direction: ", &lights[i].Direction.x, 0.01f);
+				break;
 			}
 			ImGui::TreePop();
 		}
