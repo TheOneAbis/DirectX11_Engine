@@ -44,15 +44,18 @@ void GameEntity::Draw(
 	material->GetPS()->SetShader();
 
 	std::shared_ptr<SimpleVertexShader> vs = material->GetVS();
-	vs->SetMatrix4x4("world", transform.GetWorldMatrix()); // Strings here MUST 
-	vs->SetMatrix4x4("view", camPtr->GetView()); // match variable names in your
-	vs->SetMatrix4x4("projection", camPtr->GetProjection()); // shader’s cbuffer!
+	// Strings here MUST  match variable names in your shader’s cbuffer!
+	vs->SetMatrix4x4("world", transform.GetWorldMatrix());
+	vs->SetMatrix4x4("worldInvTranspose", transform.GetWorldInverseTransposeMatrix());
+	vs->SetMatrix4x4("view", camPtr->GetView());
+	vs->SetMatrix4x4("projection", camPtr->GetProjection());
 
 	vs->CopyAllBufferData(); // Adjust “vs” variable name if necessary
 
 	std::shared_ptr<SimplePixelShader> ps = material->GetPS();
-	ps->SetFloat4("colorTint", material->GetColor()); 
-	ps->SetFloat("specularAmt", material->GetSpecular());
+	ps->SetFloat4("surfaceColor", material->GetColor()); 
+	ps->SetFloat("roughness", material->GetRoughness());
+	ps->SetFloat3("cameraPosition", camPtr->GetTransform().GetPosition());
 
 	ps->CopyAllBufferData();
 	//VertexShaderExternalData vsData = {};

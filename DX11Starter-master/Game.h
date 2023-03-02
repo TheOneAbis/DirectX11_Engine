@@ -6,6 +6,7 @@
 #include "DXCore.h"
 #include "GameEntity.h"
 #include "SimpleShader.h"
+#include "Lights.h"
 
 class Game 
 	: public DXCore
@@ -40,6 +41,8 @@ private:
 	std::vector<std::shared_ptr<Camera>> cams;
 	std::shared_ptr<Camera> activeCam;
 	int camIndex;
+
+	std::vector<Light> lights;
 	
 	// Shaders and shader-related constructs
 	std::shared_ptr<SimplePixelShader> pixelShader, customPS;

@@ -114,6 +114,44 @@ void Game::Init()
 	cams.push_back(std::make_shared<Camera>(Perspective, (float)windowWidth, (float)windowHeight, 100.0f, 0.1f, 1000.0f, XMFLOAT3(3, 0, -3.0f), XMFLOAT3(-0.2f, 0, 0)));
 	cams.push_back(std::make_shared<Camera>(Perspective, (float)windowWidth, (float)windowHeight, 60.0f, 0.1f, 1000.0f, XMFLOAT3(-3, 0, -3.0f), XMFLOAT3(0.2f, 0, 0)));
 
+	// Create the scene lights
+	Light newLight = {};
+	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
+	newLight.Direction = XMFLOAT3(1.0f, 0, 0);
+	newLight.Color = XMFLOAT3(0.5f, 1.0f, 0.6f);
+	newLight.Intensity = 1.0f;
+	lights.push_back(newLight);
+
+	newLight = {};
+	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
+	newLight.Direction = XMFLOAT3(-1.0f, -1.0f, 0.7);
+	newLight.Color = XMFLOAT3(0.8f, 0.3f, 0.1f);
+	newLight.Intensity = 0.8f;
+	lights.push_back(newLight);
+
+	newLight = {};
+	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
+	newLight.Direction = XMFLOAT3(-0.5f, 0.3f, -0.4f);
+	newLight.Color = XMFLOAT3(0.0f, 0.5f, 0.9f);
+	newLight.Intensity = 1.0f;
+	lights.push_back(newLight);
+
+	newLight = {};
+	newLight.Type = LIGHT_TYPE_POINT;
+	newLight.Position = XMFLOAT3(0.0f, 1.0f, 0.0f);
+	newLight.Color = XMFLOAT3(1.0f, 1.0f, 0.9f);
+	newLight.Intensity = 1.0f;
+	newLight.Range = 5.0f;
+	lights.push_back(newLight);
+
+	newLight = {};
+	newLight.Type = LIGHT_TYPE_POINT;
+	newLight.Position = XMFLOAT3(3.0f, -1.0f, 0.0f);
+	newLight.Color = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	newLight.Intensity = 1.0f;
+	newLight.Range = 10.0f;
+	lights.push_back(newLight);
+
 	activeCam = cams[camIndex];
 }
 
@@ -214,9 +252,9 @@ void Game::CreateGeometry()
 	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/helix.obj").c_str(), device, context));
 
 	// Create materials
-	std::shared_ptr<Material> mat1 = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.01f, vertexShader, pixelShader);
-	std::shared_ptr<Material> mat2 = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.01f, vertexShader, pixelShader);
-	std::shared_ptr<Material> mat3 = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.5f, vertexShader, pixelShader);
+	std::shared_ptr<Material> mat1 = std::make_shared<Material>(XMFLOAT4(0, 1, 1, 1), 0.0f, vertexShader, pixelShader);
+	std::shared_ptr<Material> mat2 = std::make_shared<Material>(XMFLOAT4(1, 0, 1, 1), 0.0f, vertexShader, pixelShader);
+	std::shared_ptr<Material> mat3 = std::make_shared<Material>(XMFLOAT4(1, 1, 0, 1), 0.0f, vertexShader, pixelShader);
 	std::shared_ptr<Material> customMat = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.1f, vertexShader, customPS);
 
 	// Create the game objects
@@ -310,6 +348,7 @@ void Game::UpdateUI(float deltaTime)
 	// Game Object Inspector
 	ImGui::Begin("Hierarchy");
 	
+	// Game Objects
 	for (int i = 0; i < 6; i++)
 	{
 		if (ImGui::TreeNode((void*)(intptr_t)i, "Game Object %d", i))
@@ -320,6 +359,8 @@ void Game::UpdateUI(float deltaTime)
 			ImGui::TreePop();
 		}
 	}
+
+	// Active Camera
 	if (ImGui::TreeNode((void*)(intptr_t)6, "Active Camera (%d)", camIndex))
 	{
 		ImGui::Text("Position: %f, %f, %f", 
@@ -334,6 +375,31 @@ void Game::UpdateUI(float deltaTime)
 			activeCam->fov);
 		ImGui::TreePop();
 	}
+
+	// Lights
+	for (int i = 0; i < lights.size(); i++)
+	{
+		if (ImGui::TreeNode((void*)(intptr_t)i, "Light %d", i))
+		{
+			switch (lights[i].Type)
+			{
+			case LIGHT_TYPE_DIRECTIONAL:
+				ImGui::Text("Type: Directional");
+				ImGui::DragFloat3("Direction: ", &lights[i].Direction.x, 0.01f);
+				break;
+			case LIGHT_TYPE_POINT:
+				ImGui::Text("Type: Point");
+				ImGui::DragFloat3("Position: ", &lights[i].Position.x, 0.01f);
+				break;
+				case LIGHT_TYPE_SPOT:
+					ImGui::Text("Type: Spot");
+					ImGui::DragFloat3("Position: ", &lights[i].Position.x, 0.01f);
+					ImGui::DragFloat3("Direction: ", &lights[i].Direction.x, 0.01f);
+					break;
+			}
+			ImGui::TreePop();
+		}
+	}
 	ImGui::End();
 }
 
@@ -347,7 +413,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	// - At the beginning of Game::Draw() before drawing *anything*
 	{
 		// Clear the back buffer (erases what's on the screen)
-		const float bgColor[4] = { 0.4f, 0.6f, 0.75f, 1.0f }; // Cornflower Blue
+		const float bgColor[4] = { 0.2f, 0.2f, 0.2f, 1.0f }; // dark grey
 		context->ClearRenderTargetView(backBufferRTV.Get(), bgColor);
 
 		// Clear the depth buffer (resets per-pixel occlusion information)
@@ -355,30 +421,25 @@ void Game::Draw(float deltaTime, float totalTime)
 	}
 
 	XMFLOAT3 ambientColor = { 0.1f, 0.1f, 0.1f };
-	XMFLOAT3 lightDir = { 1, 0, 0 };
-	XMFLOAT3 lightColor = { 1, 1, 1 };
-	XMFLOAT3 light2Dir = { -1, 0, 0 };
-	XMFLOAT3 light2Color = { 0, 0, 0 };
-	XMFLOAT2 mousePos = XMFLOAT2((float)Input::GetInstance().GetMouseX(), (float)Input::GetInstance().GetMouseY());
-
+	
 	// Render Game entities
 	for (GameEntity& gameObject : gameObjects)
 	{
 		std::shared_ptr<SimplePixelShader> ps = gameObject.GetMaterial()->GetPS();
+		ps->SetData("lights",                         // name of the lights array in shader
+			&lights[0],                               // address of the data to set
+			sizeof(Light) * (int)lights.size());      // size of the data (whole struct) to set
 		ps->SetFloat3("ambientColor", ambientColor);
-		ps->SetFloat3("lightDir", lightDir);
-		ps->SetFloat3("lightColor", lightColor);
-		ps->SetFloat3("light2Dir", light2Dir);
-		ps->SetFloat3("light2Color", light2Color);
-		ps->SetFloat3("cameraPosition", activeCam->GetTransform().GetPosition());
+		
 		gameObject.Draw(context, activeCam);
 	}
 	
+	XMFLOAT2 mousePos = XMFLOAT2((float)Input::GetInstance().GetMouseX(), (float)Input::GetInstance().GetMouseY());
+
 	std::shared_ptr<SimplePixelShader> uniquePS = uniqueObj.GetMaterial()->GetPS();
-	uniquePS->SetFloat3("lightDir", lightDir);
-	uniquePS->SetFloat("time", totalTime);
 	uniquePS->SetFloat3("ambientColor", ambientColor);
 	uniquePS->SetFloat2("mousePos", mousePos);
+	uniquePS->SetFloat("time", totalTime);
 	uniqueObj.Draw(context, activeCam);
 
 	// Render the UI

@@ -4,12 +4,12 @@ using namespace DirectX;
 using namespace std;
 
 Material::Material(XMFLOAT4 color, 
-	float specular,
+	float roughness,
 	shared_ptr<SimpleVertexShader> vertexShader,
 	shared_ptr<SimplePixelShader>  pixelShader)
 {
 	colorTint = color;
-	this->specular = specular;
+	this->roughness = roughness;
 	vs = vertexShader;
 	ps = pixelShader;
 }
@@ -19,9 +19,9 @@ XMFLOAT4 Material::GetColor()
 	return colorTint;
 }
 
-float Material::GetSpecular()
+float Material::GetRoughness()
 {
-	return specular;
+	return roughness;
 }
 
 shared_ptr<SimpleVertexShader> Material::GetVS()

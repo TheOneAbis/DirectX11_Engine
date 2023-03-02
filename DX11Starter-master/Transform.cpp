@@ -35,7 +35,7 @@ void Transform::UpdateMatrices()
 
 	XMMATRIX world = XMMatrixMultiply(XMMatrixMultiply(s, r), t);
 	XMStoreFloat4x4(&worldMatrix, world);
-	XMStoreFloat4x4(&worldInverseTranspose, XMMatrixInverse(0, world));
+	XMStoreFloat4x4(&worldInverseTranspose, XMMatrixInverse(0, XMMatrixTranspose(world)));
 }
 
 // Transformation methods
