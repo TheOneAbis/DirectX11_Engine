@@ -3,6 +3,7 @@
 cbuffer ExternalData : register(b0)
 {
     float3 ambientColor;
+    float textureScale;
     float4 colorTint;
     float roughness;
 	float3 cameraPosition;
@@ -28,13 +29,13 @@ SamplerState BasicSampler : register(s0); // "s" registers for samplers
 float4 main(VertexToPixel input) : SV_TARGET
 {
 	// MUST re-normalize any interpolated vectors (rasterizer interpolates individual floats)
-	input.normal = normalize(input.normal);
+    input.normal = normalize(input.normal);
     
     // Calculate vector from surface to camera
     float3 viewVector = normalize(cameraPosition - input.worldPosition);
 
-    // Sample the surface texture for the initial pixel color
-    float3 surfaceColor = (usesTextures ? SurfaceTexture.Sample(BasicSampler, input.uv).rgb : 1) * colorTint.xyz;
+    // Sample the surface texture for the initial pixel color (scale texture if a scale was specified)
+    float3 surfaceColor = (usesTextures ? SurfaceTexture.Sample(BasicSampler, input.uv * textureScale).rgb : 1) * colorTint.xyz;
     float3 totalLightColor = ambientColor;
     
     float3 lightDir;
@@ -64,7 +65,7 @@ float4 main(VertexToPixel input) : SV_TARGET
             surfaceColor,
             viewVector,
             roughness,
-            usesTextures ? SpecularTexture.Sample(BasicSampler, input.uv).r : 1) * lights[i].Intensity;
+            usesTextures ? SpecularTexture.Sample(BasicSampler, input.uv * textureScale).r : 1) * lights[i].Intensity;
 
         // If this is a point or spot light, attenuate the color
         if (attenuate)

@@ -251,6 +251,7 @@ void Game::CreateGeometry()
 	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/torus.obj").c_str(), device, context));
 	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/cylinder.obj").c_str(), device, context));
 	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/helix.obj").c_str(), device, context));
+	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/quad.obj").c_str(), device, context));
 
 	// Create the texture ptr for later use
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv;
@@ -297,11 +298,16 @@ void Game::CreateGeometry()
 	gameObjects.push_back(GameEntity(meshes[1], mat2));
 	gameObjects.push_back(GameEntity(meshes[2], mat3));
 	gameObjects.push_back(GameEntity(meshes[3], mat1));
+	gameObjects.push_back(GameEntity(meshes[4], mat1));
 	uniqueObj = GameEntity(meshes[0], customMat);
 	uniqueObj.GetTransform()->SetPosition(-4, 0, 0);
 	gameObjects[0].GetTransform()->SetPosition(-8, 0, 0);
 	gameObjects[2].GetTransform()->SetPosition(4, 0, 0);
 	gameObjects[3].GetTransform()->SetPosition(8, 0, 0);
+	// ground texture
+	gameObjects[4].GetTransform()->SetScale(10, 1, 10);
+	gameObjects[4].SetTextureUniformScale(10.0f);
+	gameObjects[4].GetTransform()->MoveAbsolute(0, -3, 0);
 }
 
 

@@ -7,12 +7,14 @@ GameEntity::GameEntity()
 {
 	this->mesh = nullptr;
 	this->material = nullptr;
+	textureScale = 1;
 }
 
 GameEntity::GameEntity(shared_ptr<Mesh> mesh, shared_ptr<Material> material)
 {
 	this->mesh = mesh;
 	this->material = material;
+	textureScale = 1;
 }
 
 shared_ptr<Mesh> GameEntity::GetMesh()
@@ -33,6 +35,11 @@ void GameEntity::SetMaterial(shared_ptr<Material> material)
 Transform* GameEntity::GetTransform()
 {
 	return &transform;
+}
+
+void GameEntity::SetTextureUniformScale(float scale)
+{
+	textureScale = scale;
 }
 
 void GameEntity::Draw(
@@ -59,6 +66,7 @@ void GameEntity::Draw(
 	ps->SetFloat4("colorTint", material->GetColor()); 
 	ps->SetFloat("roughness", material->GetRoughness());
 	ps->SetFloat3("cameraPosition", camPtr->GetTransform().GetPosition());
+	ps->SetFloat("textureScale", textureScale);
 
 	ps->CopyAllBufferData();
 	//VertexShaderExternalData vsData = {};

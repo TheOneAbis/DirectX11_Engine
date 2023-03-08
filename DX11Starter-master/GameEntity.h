@@ -12,6 +12,7 @@ private:
 	Transform transform;
 	std::shared_ptr<Mesh> mesh;
 	std::shared_ptr<Material> material;
+	float textureScale;
 
 public:
 
@@ -22,6 +23,7 @@ public:
 	std::shared_ptr<Material> GetMaterial();
 	void SetMaterial(std::shared_ptr<Material> material);
 	Transform* GetTransform();
+	void SetTextureUniformScale(float scale);
 
 	void Draw(
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
