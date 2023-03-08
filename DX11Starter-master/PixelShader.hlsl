@@ -6,11 +6,14 @@ cbuffer ExternalData : register(b0)
     float4 colorTint;
     float roughness;
 	float3 cameraPosition;
+
+    bool usesTextures;
     
     Light lights[MAX_LIGHT_COUNT];
 }
 
 Texture2D SurfaceTexture  : register(t0); // "t" registers for textures
+Texture2D SpecularTexture  : register(t1); // Specular map
 SamplerState BasicSampler : register(s0); // "s" registers for samplers
 
 // --------------------------------------------------------
@@ -31,8 +34,8 @@ float4 main(VertexToPixel input) : SV_TARGET
     float3 viewVector = normalize(cameraPosition - input.worldPosition);
 
     // Sample the surface texture for the initial pixel color
-    float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb;
-    float3 totalLightColor = surfaceColor * colorTint.xyz * ambientColor;
+    float3 surfaceColor = (usesTextures ? SurfaceTexture.Sample(BasicSampler, input.uv).rgb : 1) * colorTint.xyz;
+    float3 totalLightColor = ambientColor;
     
     float3 lightDir;
     bool attenuate = false;
@@ -58,9 +61,10 @@ float4 main(VertexToPixel input) : SV_TARGET
             input.normal,
             lightDir,
             lights[i].Color,
-            colorTint.xyz,
+            surfaceColor,
             viewVector,
-            roughness) * lights[i].Intensity;
+            roughness,
+            usesTextures ? SpecularTexture.Sample(BasicSampler, input.uv).r : 1) * lights[i].Intensity;
 
         // If this is a point or spot light, attenuate the color
         if (attenuate)

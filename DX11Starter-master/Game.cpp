@@ -120,21 +120,21 @@ void Game::Init()
 	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
 	newLight.Direction = XMFLOAT3(1.0f, 0, 0);
 	newLight.Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	newLight.Intensity = 0.5f;
+	newLight.Intensity = 0.7f;
 	lights.push_back(newLight);
 
 	newLight = {};
 	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
 	newLight.Direction = XMFLOAT3(-1.0f, -1.0f, 0.7);
 	newLight.Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	newLight.Intensity = 0.4f;
+	newLight.Intensity = 0.6f;
 	lights.push_back(newLight);
 
 	newLight = {};
 	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
 	newLight.Direction = XMFLOAT3(-0.5f, 0.3f, -0.4f);
 	newLight.Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	newLight.Intensity = 0.6f;
+	newLight.Intensity = 0.4f;
 	lights.push_back(newLight);
 
 	newLight = {};
@@ -252,12 +252,10 @@ void Game::CreateGeometry()
 	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/cylinder.obj").c_str(), device, context));
 	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/helix.obj").c_str(), device, context));
 
-	// Create the textures
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvBrokenTiles;
-	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/brokentiles.png").c_str(), 0, srvBrokenTiles.GetAddressOf());
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvTiles;
-	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/tiles.png").c_str(), 0, srvTiles.GetAddressOf());
+	// Create the texture ptr for later use
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv;
 
+	// Create sampler description
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
 	D3D11_SAMPLER_DESC samplerDesc = {};
 	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -272,13 +270,27 @@ void Game::CreateGeometry()
 
 	// Create materials
 	std::shared_ptr<Material> mat1 = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.0f, vertexShader, pixelShader);
-	std::shared_ptr<Material> mat2 = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.0f, vertexShader, pixelShader);
+	std::shared_ptr<Material> mat2 = std::make_shared<Material>(XMFLOAT4(1, 0, 1, 1), 0.0f, vertexShader, pixelShader);
 	std::shared_ptr<Material> mat3 = std::make_shared<Material>(XMFLOAT4(1, 1, 0, 1), 0.0f, vertexShader, pixelShader);
 	std::shared_ptr<Material> customMat = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.1f, vertexShader, customPS);
-	mat1->AddTextureSRV("SurfaceTexture", srvBrokenTiles);
+
+	// Mat1 albedo
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/brokentiles.png").c_str(), 0, srv.GetAddressOf());
+	mat1->AddTextureSRV("SurfaceTexture", srv);
 	mat1->AddSampler("BasicSampler", samplerState);
-	mat2->AddTextureSRV("SurfaceTexture", srvTiles);
+
+	// Mat1 specular
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/brokentiles_specular.png").c_str(), 0, srv.GetAddressOf());
+	mat1->AddTextureSRV("SpecularTexture", srv);
+
+	// Mat2 albedo
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/tiles.png").c_str(), 0, srv.GetAddressOf());
+	mat2->AddTextureSRV("SurfaceTexture", srv);
 	mat2->AddSampler("BasicSampler", samplerState);
+
+	// Mat2 specular
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/tiles_specular.png").c_str(), 0, srv.GetAddressOf());
+	mat2->AddTextureSRV("SpecularTexture", srv);
 
 	// Create the game objects
 	gameObjects.push_back(GameEntity(meshes[0], mat1));

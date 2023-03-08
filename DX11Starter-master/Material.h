@@ -35,4 +35,6 @@ private:
 	// texture SRV and sampler maps
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> textureSRVs;
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11SamplerState>> samplers;
+
+	bool usesTextures;
 };

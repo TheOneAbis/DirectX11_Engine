@@ -60,7 +60,7 @@ float DiffuseBRDF(float3 normal, float3 dirToLight)
     return saturate(dot(normal, dirToLight));
 }
 
-float SpecularBRDF(float3 normal, float3 lightDir, float3 viewVector, float roughness)
+float SpecularBRDF(float3 normal, float3 lightDir, float3 viewVector, float roughness, float roughnessScale)
 {
 	// Get reflection of light bounsing off the surface 
     float3 refl = reflect(lightDir, normal);
@@ -69,14 +69,14 @@ float SpecularBRDF(float3 normal, float3 lightDir, float3 viewVector, float roug
 
 	// Compare reflection against view vector, raising it to
 	// a very high power to ensure the falloff to zero is quick
-    return pow(saturate(dot(refl, viewVector)), specExponent);
+    return pow(saturate(dot(refl, viewVector)), specExponent) * roughnessScale;
 }
 
-float3 ColorFromLight(float3 normal, float3 lightDir, float3 lightColor, float3 colorTint, float3 viewVec, float roughness)
+float3 ColorFromLight(float3 normal, float3 lightDir, float3 lightColor, float3 colorTint, float3 viewVec, float roughness, float roughnessScale)
 {
     // Calculate diffuse an specular values
     float diffuse = DiffuseBRDF(normal, -lightDir);
-    float spec = SpecularBRDF(normal, lightDir, viewVec, roughness);
+    float spec = SpecularBRDF(normal, lightDir, viewVec, roughness, roughnessScale);
 
     return lightColor * colorTint * (diffuse + spec);
 }

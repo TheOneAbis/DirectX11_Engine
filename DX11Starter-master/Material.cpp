@@ -36,6 +36,7 @@ shared_ptr<SimplePixelShader> Material::GetPS()
 
 void Material::PrepareMaterial()
 {
+	ps->SetInt("usesTextures", usesTextures);
 	// Bind the texture SRVs
 	for (auto& t : textureSRVs) 
 		ps->SetShaderResourceView(t.first.c_str(), t.second);
@@ -48,6 +49,13 @@ void Material::PrepareMaterial()
 // So that if the next material isn't using textures but the same shader, it will not end up using the texture from this material
 void Material::ResetTextureData()
 {
+	// No SRVs - not using textures
+	if (textureSRVs.size() == 0)
+	{
+		usesTextures = false;
+		return;
+	}
+
 	for (auto& t : textureSRVs)
 		ps->SetShaderResourceView(t.first.c_str(), 0);
 
