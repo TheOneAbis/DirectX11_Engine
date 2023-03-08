@@ -43,6 +43,9 @@ void GameEntity::Draw(
 	material->GetVS()->SetShader();
 	material->GetPS()->SetShader();
 
+	// Do any routine prep work for the material's shaders (i.e. loading stuff)
+	material->PrepareMaterial();
+
 	std::shared_ptr<SimpleVertexShader> vs = material->GetVS();
 	// Strings here MUST  match variable names in your shader’s cbuffer!
 	vs->SetMatrix4x4("world", transform.GetWorldMatrix());
@@ -53,7 +56,7 @@ void GameEntity::Draw(
 	vs->CopyAllBufferData(); // Adjust “vs” variable name if necessary
 
 	std::shared_ptr<SimplePixelShader> ps = material->GetPS();
-	ps->SetFloat4("surfaceColor", material->GetColor()); 
+	ps->SetFloat4("colorTint", material->GetColor()); 
 	ps->SetFloat("roughness", material->GetRoughness());
 	ps->SetFloat3("cameraPosition", camPtr->GetTransform().GetPosition());
 
@@ -81,4 +84,7 @@ void GameEntity::Draw(
 
 	// Draw the mesh
 	mesh->Draw();
+
+	// reset the SRV's and samplers for the next time so shader is fresh for a different material
+	material->ResetTextureData();
 }

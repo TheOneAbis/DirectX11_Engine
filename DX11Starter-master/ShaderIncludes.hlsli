@@ -72,13 +72,13 @@ float SpecularBRDF(float3 normal, float3 lightDir, float3 viewVector, float roug
     return pow(saturate(dot(refl, viewVector)), specExponent);
 }
 
-float3 ColorFromLight(float3 normal, float3 lightDir, float3 lightColor, float3 surfaceColor, float3 viewVec, float roughness)
+float3 ColorFromLight(float3 normal, float3 lightDir, float3 lightColor, float3 colorTint, float3 viewVec, float roughness)
 {
     // Calculate diffuse an specular values
     float diffuse = DiffuseBRDF(normal, -lightDir);
     float spec = SpecularBRDF(normal, lightDir, viewVec, roughness);
 
-    return lightColor * surfaceColor * (diffuse + spec);
+    return lightColor * colorTint * (diffuse + spec);
 }
 
 float Attenuate(Light light, float3 worldPos)

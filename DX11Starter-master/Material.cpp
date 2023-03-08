@@ -33,3 +33,34 @@ shared_ptr<SimplePixelShader> Material::GetPS()
 {
 	return ps;
 }
+
+void Material::PrepareMaterial()
+{
+	// Bind the texture SRVs
+	for (auto& t : textureSRVs) 
+		ps->SetShaderResourceView(t.first.c_str(), t.second);
+
+	// Bind the texture sampler states
+	for (auto& s : samplers) 
+		ps->SetSamplerState(s.first.c_str(), s.second);
+}
+
+// So that if the next material isn't using textures but the same shader, it will not end up using the texture from this material
+void Material::ResetTextureData()
+{
+	for (auto& t : textureSRVs)
+		ps->SetShaderResourceView(t.first.c_str(), 0);
+
+	for (auto& s : samplers)
+		ps->SetSamplerState(s.first.c_str(), 0);
+}
+
+void Material::AddTextureSRV(string name, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv)
+{
+	textureSRVs.insert({ name, srv });
+}
+
+void Material::AddSampler(string name, Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState)
+{
+	samplers.insert({ name, samplerState });
+}

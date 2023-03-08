@@ -8,6 +8,7 @@
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_dx11.h"
 #include "ImGui/imgui_impl_win32.h"
+#include "WICTextureLoader.h"
 
 // Needed for a helper function to load pre-compiled shader files
 #pragma comment(lib, "d3dcompiler.lib")
@@ -118,36 +119,36 @@ void Game::Init()
 	Light newLight = {};
 	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
 	newLight.Direction = XMFLOAT3(1.0f, 0, 0);
-	newLight.Color = XMFLOAT3(0.5f, 1.0f, 0.6f);
-	newLight.Intensity = 1.0f;
+	newLight.Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	newLight.Intensity = 0.5f;
 	lights.push_back(newLight);
 
 	newLight = {};
 	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
 	newLight.Direction = XMFLOAT3(-1.0f, -1.0f, 0.7);
-	newLight.Color = XMFLOAT3(0.8f, 0.3f, 0.1f);
-	newLight.Intensity = 0.8f;
+	newLight.Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	newLight.Intensity = 0.4f;
 	lights.push_back(newLight);
 
 	newLight = {};
 	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
 	newLight.Direction = XMFLOAT3(-0.5f, 0.3f, -0.4f);
-	newLight.Color = XMFLOAT3(0.0f, 0.5f, 0.9f);
-	newLight.Intensity = 1.0f;
+	newLight.Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	newLight.Intensity = 0.6f;
 	lights.push_back(newLight);
 
 	newLight = {};
 	newLight.Type = LIGHT_TYPE_POINT;
 	newLight.Position = XMFLOAT3(0.0f, 1.0f, 0.0f);
-	newLight.Color = XMFLOAT3(1.0f, 1.0f, 0.9f);
-	newLight.Intensity = 1.0f;
+	newLight.Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	newLight.Intensity = 0.5f;
 	newLight.Range = 5.0f;
 	lights.push_back(newLight);
 
 	newLight = {};
 	newLight.Type = LIGHT_TYPE_POINT;
 	newLight.Position = XMFLOAT3(3.0f, -1.0f, 0.0f);
-	newLight.Color = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	newLight.Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
 	newLight.Intensity = 1.0f;
 	newLight.Range = 10.0f;
 	lights.push_back(newLight);
@@ -251,11 +252,33 @@ void Game::CreateGeometry()
 	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/cylinder.obj").c_str(), device, context));
 	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/helix.obj").c_str(), device, context));
 
+	// Create the textures
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvBrokenTiles;
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/brokentiles.png").c_str(), 0, srvBrokenTiles.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvTiles;
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/tiles.png").c_str(), 0, srvTiles.GetAddressOf());
+
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
+	D3D11_SAMPLER_DESC samplerDesc = {};
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;     // for extreme angles
+	samplerDesc.MaxAnisotropy = 16;                    // max anisotropic filtering quality
+	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;            // any mipmap range
+
+	// Create the sampler state from the description
+	device->CreateSamplerState(&samplerDesc, samplerState.GetAddressOf());
+
 	// Create materials
-	std::shared_ptr<Material> mat1 = std::make_shared<Material>(XMFLOAT4(0, 1, 1, 1), 0.0f, vertexShader, pixelShader);
-	std::shared_ptr<Material> mat2 = std::make_shared<Material>(XMFLOAT4(1, 0, 1, 1), 0.0f, vertexShader, pixelShader);
+	std::shared_ptr<Material> mat1 = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.0f, vertexShader, pixelShader);
+	std::shared_ptr<Material> mat2 = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.0f, vertexShader, pixelShader);
 	std::shared_ptr<Material> mat3 = std::make_shared<Material>(XMFLOAT4(1, 1, 0, 1), 0.0f, vertexShader, pixelShader);
 	std::shared_ptr<Material> customMat = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.1f, vertexShader, customPS);
+	mat1->AddTextureSRV("SurfaceTexture", srvBrokenTiles);
+	mat1->AddSampler("BasicSampler", samplerState);
+	mat2->AddTextureSRV("SurfaceTexture", srvTiles);
+	mat2->AddSampler("BasicSampler", samplerState);
 
 	// Create the game objects
 	gameObjects.push_back(GameEntity(meshes[0], mat1));

@@ -3,12 +3,15 @@
 cbuffer ExternalData : register(b0)
 {
     float3 ambientColor;
-    float4 surfaceColor;
+    float4 colorTint;
     float roughness;
 	float3 cameraPosition;
     
     Light lights[MAX_LIGHT_COUNT];
 }
+
+Texture2D SurfaceTexture  : register(t0); // "t" registers for textures
+SamplerState BasicSampler : register(s0); // "s" registers for samplers
 
 // --------------------------------------------------------
 // The entry point (main method) for our pixel shader
@@ -23,10 +26,13 @@ float4 main(VertexToPixel input) : SV_TARGET
 {
 	// MUST re-normalize any interpolated vectors (rasterizer interpolates individual floats)
 	input.normal = normalize(input.normal);
+    
     // Calculate vector from surface to camera
     float3 viewVector = normalize(cameraPosition - input.worldPosition);
 
-    float3 totalLightColor = ambientColor;
+    // Sample the surface texture for the initial pixel color
+    float3 surfaceColor = SurfaceTexture.Sample(BasicSampler, input.uv).rgb;
+    float3 totalLightColor = surfaceColor * colorTint.xyz * ambientColor;
     
     float3 lightDir;
     bool attenuate = false;
@@ -52,7 +58,7 @@ float4 main(VertexToPixel input) : SV_TARGET
             input.normal,
             lightDir,
             lights[i].Color,
-            surfaceColor.xyz,
+            colorTint.xyz,
             viewVector,
             roughness) * lights[i].Intensity;
 
