@@ -36,7 +36,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 
     // Sample the surface texture for the initial pixel color (scale texture if a scale was specified)
     float3 surfaceColor = (usesTextures ? SurfaceTexture.Sample(BasicSampler, input.uv * textureScale).rgb : 1) * colorTint.xyz;
-    float3 totalLightColor = ambientColor;
+    float3 totalLightColor = ambientColor * surfaceColor;
     
     float3 lightDir;
     bool attenuate = false;

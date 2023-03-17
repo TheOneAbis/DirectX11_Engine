@@ -78,7 +78,7 @@ float3 ColorFromLight(float3 normal, float3 lightDir, float3 lightColor, float3 
     float diffuse = DiffuseBRDF(normal, -lightDir);
     float spec = SpecularBRDF(normal, lightDir, viewVec, roughness, roughnessScale);
 
-    return lightColor * colorTint * (diffuse + spec);
+    return lightColor * colorTint * diffuse + spec;
 }
 
 float Attenuate(Light light, float3 worldPos)

@@ -6,6 +6,7 @@
 #define LIGHT_TYPE_POINT 1
 #define LIGHT_TYPE_SPOT 2
 
+// Note SimpleShader handles boundary issues from separate data, but still need to manually handle this inside a struct
 struct Light
 {
 	int Type;                     // Which kind of light? 0, 1 or 2 (see above)
@@ -15,5 +16,5 @@ struct Light
 	float Intensity;              // All lights need an intensity
 	DirectX::XMFLOAT3 Color;      // All lights need a color
 	float SpotFalloff;            // Spot lights need a value to define their “cone” size
-	DirectX::XMFLOAT3 Padding;    // Purposefully padding to hit the 16-byte boundar
+	DirectX::XMFLOAT3 Padding;    // Purposefully padding to hit the 16-byte bounder
 };

@@ -95,46 +95,19 @@ void Game::Init()
 		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	}
 
-	//// Get size as the next multiple of 16 (instead of hardcoding a size here)
-	//unsigned int size = sizeof(VertexShaderExternalData);
-	//size = (size + 15) / 16 * 16; // This will work even if the struct size changes
-
-	//// Describe the constant buffer
-	//D3D11_BUFFER_DESC cbDesc = {}; // Sets struct to all zeros
-	//cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	//cbDesc.ByteWidth = size; // Must be a multiple of 16
-	//cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	//cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-
-	// Create the constant buffer
-	//device->CreateBuffer(&cbDesc, 0, vsConstantBuffer.GetAddressOf());
-
 	// Init the cameras
 	cams.push_back(std::make_shared<Camera>(Perspective, (float)windowWidth, (float)windowHeight, 80.0f, 0.1f, 1000.0f, XMFLOAT3(0, 0, -3.0f)));
-	cams.push_back(std::make_shared<Camera>(Orthographic, (float)windowWidth, (float)windowHeight, 80.0f, 0.1f, 1000.0f, XMFLOAT3(0, 0, -3.0f)));
+	cams.push_back(std::make_shared<Camera>(Orthographic, (float)16, (float)9, 80.0f, 0.1f, 1000.0f, XMFLOAT3(0, 0, -3.0f)));
 	cams.push_back(std::make_shared<Camera>(Perspective, (float)windowWidth, (float)windowHeight, 100.0f, 0.1f, 1000.0f, XMFLOAT3(3, 0, -3.0f), XMFLOAT3(-0.2f, 0, 0)));
 	cams.push_back(std::make_shared<Camera>(Perspective, (float)windowWidth, (float)windowHeight, 60.0f, 0.1f, 1000.0f, XMFLOAT3(-3, 0, -3.0f), XMFLOAT3(0.2f, 0, 0)));
 
 	// Create the scene lights
+	// NOTE: got rid of the other 2 directional lights; makes sense to only have one for the sunlight
 	Light newLight = {};
 	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
-	newLight.Direction = XMFLOAT3(1.0f, 0, 0);
+	newLight.Direction = XMFLOAT3(-1.0f, -1.0f, 0.7f);
 	newLight.Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
 	newLight.Intensity = 0.7f;
-	lights.push_back(newLight);
-
-	newLight = {};
-	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
-	newLight.Direction = XMFLOAT3(-1.0f, -1.0f, 0.7);
-	newLight.Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	newLight.Intensity = 0.6f;
-	lights.push_back(newLight);
-
-	newLight = {};
-	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
-	newLight.Direction = XMFLOAT3(-0.5f, 0.3f, -0.4f);
-	newLight.Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	newLight.Intensity = 0.4f;
 	lights.push_back(newLight);
 
 	newLight = {};
@@ -166,66 +139,7 @@ void Game::Init()
 // --------------------------------------------------------
 void Game::LoadShaders()
 {
-	//// BLOBs (or Binary Large OBjects) for reading raw data from external files
-	//// - This is a simplified way of handling big chunks of external data
-	//// - Literally just a big array of bytes read from a file
-	//ID3DBlob* pixelShaderBlob;
-	//ID3DBlob* vertexShaderBlob;
-
-	//// Loading shaders
-	////  - Visual Studio will compile our shaders at build time
-	////  - They are saved as .cso (Compiled Shader Object) files
-	////  - We need to load them when the application starts
-	//{
-	//	// Read our compiled shader code files into blobs
-	//	// - Essentially just "open the file and plop its contents here"
-	//	// - Uses the custom FixPath() helper from Helpers.h to ensure relative paths
-	//	// - Note the "L" before the string - this tells the compiler the string uses wide characters
-	//	D3DReadFileToBlob(FixPath(L"PixelShader.cso").c_str(), &pixelShaderBlob);
-	//	D3DReadFileToBlob(FixPath(L"VertexShader.cso").c_str(), &vertexShaderBlob);
-
-	//	// Create the actual Direct3D shaders on the GPU
-	//	device->CreatePixelShader(
-	//		pixelShaderBlob->GetBufferPointer(),	// Pointer to blob's contents
-	//		pixelShaderBlob->GetBufferSize(),		// How big is that data?
-	//		0,										// No classes in this shader
-	//		pixelShader.GetAddressOf());			// Address of the ID3D11PixelShader pointer
-
-	//	device->CreateVertexShader(
-	//		vertexShaderBlob->GetBufferPointer(),	// Get a pointer to the blob's contents
-	//		vertexShaderBlob->GetBufferSize(),		// How big is that data?
-	//		0,										// No classes in this shader
-	//		vertexShader.GetAddressOf());			// The address of the ID3D11VertexShader pointer
-	//}
-
-	//// Create an input layout 
-	////  - This describes the layout of data sent to a vertex shader
-	////  - In other words, it describes how to interpret data (numbers) in a vertex buffer
-	////  - Doing this NOW because it requires a vertex shader's byte code to verify against!
-	////  - Luckily, we already have that loaded (the vertex shader blob above)
-	//{
-	//	D3D11_INPUT_ELEMENT_DESC inputElements[2] = {};
-
-	//	// Set up the first element - a position, which is 3 float values
-	//	inputElements[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;				// Most formats are described as color channels; really it just means "Three 32-bit floats"
-	//	inputElements[0].SemanticName = "POSITION";							// This is "POSITION" - needs to match the semantics in our vertex shader input!
-	//	inputElements[0].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	// How far into the vertex is this?  Assume it's after the previous element
-
-	//	// Set up the second element - a color, which is 4 more float values
-	//	inputElements[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;			// 4x 32-bit floats
-	//	inputElements[1].SemanticName = "COLOR";							// Match our vertex shader input!
-	//	inputElements[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;	// After the previous element
-
-	//	// Create the input layout, verifying our description against actual shader code
-	//	device->CreateInputLayout(
-	//		inputElements,							// An array of descriptions
-	//		2,										// How many elements in that array?
-	//		vertexShaderBlob->GetBufferPointer(),	// Pointer to the code of a shader that uses this layout
-	//		vertexShaderBlob->GetBufferSize(),		// Size of the shader code that uses this layout
-	//		inputLayout.GetAddressOf());			// Address of the resulting ID3D11InputLayout pointer
-	//}
-
-	// Make the shaders with SimpleShader
+	// Make the shaders with SimpleShader (to see how to make them normally, check previous versions of this project)
 	vertexShader = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"VertexShader.cso").c_str());
 	pixelShader = std::make_shared<SimplePixelShader>(device, context, FixPath(L"PixelShader.cso").c_str());
 	customPS = std::make_shared<SimplePixelShader>(device, context, FixPath(L"CustomPS.cso").c_str());
@@ -388,21 +302,23 @@ void Game::UpdateUI(float deltaTime)
 
 	// Game Object Inspector
 	ImGui::Begin("Hierarchy");
-	
+	int currentTreeSize = 0;
+
 	// Game Objects
 	for (int i = 0; i < gameObjects.size(); i++)
 	{
-		if (ImGui::TreeNode((void*)(intptr_t)i, "Game Object %d", i))
+		if (ImGui::TreeNode((void*)(intptr_t)currentTreeSize, "Game Object %d", i))
 		{
 			ImGui::DragFloat3("Position: ", &gameObjects[i].GetTransform()->GetPosition().x, 0.01f);
 			ImGui::DragFloat3("Rotation: ", &gameObjects[i].GetTransform()->GetPitchYawRoll().x, 0.01f);
 			ImGui::DragFloat3("Scale: ", &gameObjects[i].GetTransform()->GetScale().x, 0.01f);
 			ImGui::TreePop();
 		}
+		currentTreeSize++;
 	}
 
 	// Active Camera
-	if (ImGui::TreeNode((void*)(intptr_t)6, "Active Camera (%d)", camIndex))
+	if (ImGui::TreeNode((void*)(intptr_t)currentTreeSize, "Active Camera (%d)", camIndex))
 	{
 		ImGui::Text("Position: %f, %f, %f", 
 			activeCam->GetTransform().GetPosition().x,
@@ -416,11 +332,12 @@ void Game::UpdateUI(float deltaTime)
 			activeCam->fov);
 		ImGui::TreePop();
 	}
-
+	currentTreeSize++;
+	
 	// Lights
 	for (int i = 0; i < lights.size(); i++)
 	{
-		if (ImGui::TreeNode((void*)(intptr_t)i, "Light %d", i))
+		if (ImGui::TreeNode((void*)(intptr_t)currentTreeSize, "Light %d", i))
 		{
 			switch (lights[i].Type)
 			{
@@ -440,6 +357,7 @@ void Game::UpdateUI(float deltaTime)
 			}
 			ImGui::TreePop();
 		}
+		currentTreeSize++;
 	}
 	ImGui::End();
 }
@@ -461,7 +379,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		context->ClearDepthStencilView(depthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
 
-	XMFLOAT3 ambientColor = { 0.1f, 0.1f, 0.1f };
+	XMFLOAT3 ambientColor = { 0.15f, 0.15f, 0.15f };
 	
 	// Render Game entities
 	for (GameEntity& gameObject : gameObjects)
