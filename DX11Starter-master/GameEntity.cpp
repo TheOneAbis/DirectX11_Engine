@@ -8,6 +8,7 @@ GameEntity::GameEntity()
 	this->mesh = nullptr;
 	this->material = nullptr;
 	textureScale = 1;
+	UpdateEnabled = false;
 }
 
 GameEntity::GameEntity(shared_ptr<Mesh> mesh, shared_ptr<Material> material)
@@ -15,6 +16,7 @@ GameEntity::GameEntity(shared_ptr<Mesh> mesh, shared_ptr<Material> material)
 	this->mesh = mesh;
 	this->material = material;
 	textureScale = 1;
+	UpdateEnabled = false;
 }
 
 shared_ptr<Mesh> GameEntity::GetMesh()
@@ -41,19 +43,22 @@ void GameEntity::SetTextureUniformScale(float scale)
 {
 	textureScale = scale;
 }
+// Init() is meant to be overriden bu subclasses
+void GameEntity::Init() {}
+
+// Update() is meant to be overriden by subclasses
+void GameEntity::Update(float deltaTime) {}
 
 void GameEntity::Draw(
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
 	shared_ptr<Camera> camPtr)
 {
-	// Set the shaders for this entity
-	material->GetVS()->SetShader();
-	material->GetPS()->SetShader();
-
 	// Do any routine prep work for the material's shaders (i.e. loading stuff)
 	material->PrepareMaterial();
 
 	std::shared_ptr<SimpleVertexShader> vs = material->GetVS();
+	std::shared_ptr<SimplePixelShader> ps = material->GetPS();
+
 	// Strings here MUST  match variable names in your shader’s cbuffer!
 	vs->SetMatrix4x4("world", transform.GetWorldMatrix());
 	vs->SetMatrix4x4("worldInvTranspose", transform.GetWorldInverseTransposeMatrix());
@@ -61,34 +66,17 @@ void GameEntity::Draw(
 	vs->SetMatrix4x4("projection", camPtr->GetProjection());
 
 	vs->CopyAllBufferData(); // Adjust “vs” variable name if necessary
-
-	std::shared_ptr<SimplePixelShader> ps = material->GetPS();
+	
 	ps->SetFloat4("colorTint", material->GetColor()); 
 	ps->SetFloat("roughness", material->GetRoughness());
 	ps->SetFloat3("cameraPosition", camPtr->GetTransform().GetPosition());
 	ps->SetFloat("textureScale", textureScale);
 
 	ps->CopyAllBufferData();
-	//VertexShaderExternalData vsData = {};
-	//vsData.worldMatrix = transform.GetWorldMatrix();
-	//vsData.viewMatrix = camPtr->GetView();
-	//vsData.projMatrix = camPtr->GetProjection();
-	//vsData.colorTint = material->GetColor();
 
-	//// Holds a pointer to the resource's memory after mapping occurs
-	//D3D11_MAPPED_SUBRESOURCE mappedBuffer = {};
-	//context->Map(vsConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedBuffer);
-
-	//// copy data from vsData into mappedBuffer
-	//memcpy(mappedBuffer.pData, &vsData, sizeof(vsData));
-
-	//context->Unmap(vsConstantBuffer.Get(), 0);
-
-	//// Bind the constant buffer to the cbuffer register in GPU memory
-	//context->VSSetConstantBuffers(
-	//	0,   // Which slot (register) to bind the buffer to?
-	//	1,   // How many are we activating? Can do multiple at once
-	//	vsConstantBuffer.GetAddressOf()); // Array of buffers (or the address of one)
+	// Set the shaders for this entity
+	material->GetVS()->SetShader();
+	material->GetPS()->SetShader();
 
 	// Draw the mesh
 	mesh->Draw();

@@ -4,9 +4,10 @@
 #include <vector>
 #include <memory>
 #include "DXCore.h"
-#include "GameEntity.h"
 #include "SimpleShader.h"
 #include "Lights.h"
+
+#include "GameEntitySubclassIncludes.h"
 
 class Game 
 	: public DXCore
@@ -35,7 +36,7 @@ private:
 	//     Component Object Model, which DirectX objects do
 	//  - More info here: https://github.com/Microsoft/DirectXTK/wiki/ComPtr
 
-	std::vector<GameEntity> gameObjects;
+	std::vector<GameEntity*> gameObjects; // pointers for polymorphic behavior
 	GameEntity uniqueObj;
 	std::vector<std::shared_ptr<Mesh>> meshes;
 	std::vector<std::shared_ptr<Camera>> cams;
@@ -47,6 +48,5 @@ private:
 	// Shaders and shader-related constructs
 	std::shared_ptr<SimplePixelShader> pixelShader, customPS;
 	std::shared_ptr<SimpleVertexShader> vertexShader;
-	//Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer;
 };
 

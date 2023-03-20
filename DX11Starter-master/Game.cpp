@@ -56,9 +56,9 @@ Game::~Game()
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
 
-	// Call delete or delete[] on any objects or arrays you've
-	// created using new or new[] within this class
-	// - Note: this is unnecessary if using smart pointers
+	// Clean up the game entities (as these were made on the heap)
+	for (GameEntity* obj : gameObjects)
+		delete obj;
 
 	// Call Release() on any Direct3D objects made within this class
 	// - Note: this is unnecessary for D3D objects stored in ComPtrs
@@ -157,8 +157,8 @@ void Game::CreateGeometry()
 	XMFLOAT4 red	= XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
 	XMFLOAT4 green	= XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
 	XMFLOAT4 blue	= XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
-	XMFLOAT4 black = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-	XMFLOAT4 white = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	XMFLOAT4 black  = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
+	XMFLOAT4 white  = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 
 	// Create the meshes
 	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/sphere.obj").c_str(), device, context));
@@ -184,44 +184,52 @@ void Game::CreateGeometry()
 	device->CreateSamplerState(&samplerDesc, samplerState.GetAddressOf());
 
 	// Create materials
-	std::shared_ptr<Material> mat1 = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.0f, vertexShader, pixelShader);
-	std::shared_ptr<Material> mat2 = std::make_shared<Material>(XMFLOAT4(1, 0, 1, 1), 0.0f, vertexShader, pixelShader);
-	std::shared_ptr<Material> mat3 = std::make_shared<Material>(XMFLOAT4(1, 1, 0, 1), 0.0f, vertexShader, pixelShader);
-	std::shared_ptr<Material> customMat = std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.1f, vertexShader, customPS);
+	std::vector<std::shared_ptr<Material>> mats;
+	mats.push_back(std::make_shared<Material>(white, 0.0f, vertexShader, pixelShader));
+	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 0, 1, 1), 0.0f, vertexShader, pixelShader));
+	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 1, 0, 1), 0.0f, vertexShader, pixelShader));
+	// weird material
+	mats.push_back(std::make_shared<Material>(white, 0.1f, vertexShader, customPS));
 
 	// Mat1 albedo
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/brokentiles.png").c_str(), 0, srv.GetAddressOf());
-	mat1->AddTextureSRV("SurfaceTexture", srv);
-	mat1->AddSampler("BasicSampler", samplerState);
+	mats[0]->AddTextureSRV("SurfaceTexture", srv);
 
 	// Mat1 specular
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/brokentiles_specular.png").c_str(), 0, srv.GetAddressOf());
-	mat1->AddTextureSRV("SpecularTexture", srv);
+	mats[0]->AddTextureSRV("SpecularTexture", srv);
 
 	// Mat2 albedo
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/tiles.png").c_str(), 0, srv.GetAddressOf());
-	mat2->AddTextureSRV("SurfaceTexture", srv);
-	mat2->AddSampler("BasicSampler", samplerState);
+	mats[1]->AddTextureSRV("SurfaceTexture", srv);
 
 	// Mat2 specular
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/tiles_specular.png").c_str(), 0, srv.GetAddressOf());
-	mat2->AddTextureSRV("SpecularTexture", srv);
+	mats[1]->AddTextureSRV("SpecularTexture", srv);
+
+	// Add default sampler for each material
+	for (std::shared_ptr<Material> mat : mats)
+		mat->AddSampler("BasicSampler", samplerState);
 
 	// Create the game objects
-	gameObjects.push_back(GameEntity(meshes[0], mat1));
-	gameObjects.push_back(GameEntity(meshes[1], mat2));
-	gameObjects.push_back(GameEntity(meshes[2], mat3));
-	gameObjects.push_back(GameEntity(meshes[3], mat1));
-	gameObjects.push_back(GameEntity(meshes[4], mat1));
-	uniqueObj = GameEntity(meshes[0], customMat);
-	uniqueObj.GetTransform()->SetPosition(-4, 0, 0);
-	gameObjects[0].GetTransform()->SetPosition(-8, 0, 0);
-	gameObjects[2].GetTransform()->SetPosition(4, 0, 0);
-	gameObjects[3].GetTransform()->SetPosition(8, 0, 0);
+	gameObjects.push_back(new GameEntity(meshes[0], mats[0]));
+	gameObjects.push_back(new GameEntity(meshes[1], mats[1]));
+	gameObjects.push_back(new GameEntity(meshes[2], mats[2]));
+	gameObjects.push_back(new GameEntity(meshes[3], mats[0]));
+	gameObjects.push_back(new GameEntity(meshes[4], mats[0]));
+	gameObjects.push_back(new CoolObject(meshes[0], mats[3]));
+	
+	// Call Init on all game entities in the world
+	for (GameEntity* obj : gameObjects)
+		obj->Init();
+
+	gameObjects[0]->GetTransform()->SetPosition(-8, 0, 0);
+	gameObjects[2]->GetTransform()->SetPosition(4, 0, 0);
+	gameObjects[3]->GetTransform()->SetPosition(8, 0, 0);
 	// ground texture
-	gameObjects[4].GetTransform()->SetScale(10, 1, 10);
-	gameObjects[4].SetTextureUniformScale(10.0f);
-	gameObjects[4].GetTransform()->MoveAbsolute(0, -3, 0);
+	gameObjects[4]->GetTransform()->SetScale(10, 1, 10);
+	gameObjects[4]->SetTextureUniformScale(10.0f);
+	gameObjects[4]->GetTransform()->MoveAbsolute(0, -3, 0);
 }
 
 
@@ -244,11 +252,14 @@ void Game::OnResize()
 // --------------------------------------------------------
 void Game::Update(float deltaTime, float totalTime)
 {
+	for (GameEntity* gameObj : gameObjects)
+		gameObj->Update(deltaTime);
+
 	// Do funny transformations on game objects
-	gameObjects[0].GetTransform()->Rotate(0, 0, deltaTime);
-	gameObjects[2].GetTransform()->Rotate(0, 0, deltaTime * 2);
-	gameObjects[1].GetTransform()->MoveAbsolute(sinf(deltaTime / 10), 0, 0);
-	gameObjects[3].GetTransform()->Rotate(0, 0, deltaTime / 3);
+	gameObjects[0]->GetTransform()->Rotate(0, 0, deltaTime);
+	gameObjects[2]->GetTransform()->Rotate(0, 0, deltaTime * 2);
+	gameObjects[1]->GetTransform()->MoveAbsolute(sinf(deltaTime / 10), 0, 0);
+	gameObjects[3]->GetTransform()->Rotate(0, 0, deltaTime / 3);
 
 	activeCam->Update(deltaTime);
 	activeCam->UpdateViewMatrix();
@@ -309,9 +320,9 @@ void Game::UpdateUI(float deltaTime)
 	{
 		if (ImGui::TreeNode((void*)(intptr_t)currentTreeSize, "Game Object %d", i))
 		{
-			ImGui::DragFloat3("Position: ", &gameObjects[i].GetTransform()->GetPosition().x, 0.01f);
-			ImGui::DragFloat3("Rotation: ", &gameObjects[i].GetTransform()->GetPitchYawRoll().x, 0.01f);
-			ImGui::DragFloat3("Scale: ", &gameObjects[i].GetTransform()->GetScale().x, 0.01f);
+			ImGui::DragFloat3("Position: ", &gameObjects[i]->GetTransform()->GetPosition().x, 0.01f);
+			ImGui::DragFloat3("Rotation: ", &gameObjects[i]->GetTransform()->GetPitchYawRoll().x, 0.01f);
+			ImGui::DragFloat3("Scale: ", &gameObjects[i]->GetTransform()->GetScale().x, 0.01f);
 			ImGui::TreePop();
 		}
 		currentTreeSize++;
@@ -382,24 +393,16 @@ void Game::Draw(float deltaTime, float totalTime)
 	XMFLOAT3 ambientColor = { 0.15f, 0.15f, 0.15f };
 	
 	// Render Game entities
-	for (GameEntity& gameObject : gameObjects)
+	for (GameEntity* gameObject : gameObjects)
 	{
-		std::shared_ptr<SimplePixelShader> ps = gameObject.GetMaterial()->GetPS();
+		std::shared_ptr<SimplePixelShader> ps = gameObject->GetMaterial()->GetPS();
 		ps->SetData("lights",                         // name of the lights array in shader
 			&lights[0],                               // address of the data to set
 			sizeof(Light) * (int)lights.size());      // size of the data (whole struct) to set
 		ps->SetFloat3("ambientColor", ambientColor);
 		
-		gameObject.Draw(context, activeCam);
+		gameObject->Draw(context, activeCam);
 	}
-	
-	XMFLOAT2 mousePos = XMFLOAT2((float)Input::GetInstance().GetMouseX(), (float)Input::GetInstance().GetMouseY());
-
-	std::shared_ptr<SimplePixelShader> uniquePS = uniqueObj.GetMaterial()->GetPS();
-	uniquePS->SetFloat3("ambientColor", ambientColor);
-	uniquePS->SetFloat2("mousePos", mousePos);
-	uniquePS->SetFloat("time", totalTime);
-	uniqueObj.Draw(context, activeCam);
 
 	// Render the UI
 	ImGui::Render();

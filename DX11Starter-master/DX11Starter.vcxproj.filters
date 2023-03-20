@@ -21,6 +21,12 @@
     <Filter Include="ImGui\Source Files">
       <UniqueIdentifier>{4ee27da5-ccb3-46fb-bd8c-d5a6870b2901}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Game Entity Subclass Headers">
+      <UniqueIdentifier>{80eb79aa-6fe6-4a6d-a147-e3047bee885e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game Entity Subclass Sources">
+      <UniqueIdentifier>{ad0f59e1-8ec2-41a0-8ff4-0f39f886c05f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DXCore.cpp">
@@ -76,6 +82,9 @@
     </ClCompile>
     <ClCompile Include="Material.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CoolObject.cpp">
+      <Filter>Source Files\Game Entity Subclass Sources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -141,6 +150,12 @@
     </ClInclude>
     <ClInclude Include="Lights.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CoolObject.h">
+      <Filter>Header Files\Game Entity Subclass Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEntitySubclassIncludes.h">
+      <Filter>Header Files\Game Entity Subclass Headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,0 +1,24 @@
+#pragma once
+
+#include "GameEntity.h"
+
+class CoolObject : public GameEntity
+{
+
+public:
+
+	CoolObject();
+	CoolObject(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material);
+
+	void Init() override;
+	void Update(float deltaTime) override;
+	void Draw(
+		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
+		std::shared_ptr<Camera> camPtr) override;
+
+private:
+
+	float totalTime;
+	DirectX::XMFLOAT2 mousePos;
+
+};
