@@ -16,6 +16,7 @@ struct VertexShaderInput
     float3 localPosition :   POSITION; // XYZ position
     float3 normal :          NORMAL; // Normal
     float2 uv :              TEXCOORD; // UV coordinate
+    float3 tangent :         TANGENT; // Tangent
 };
 
 // Struct representing the data we're sending down the pipeline
@@ -34,6 +35,7 @@ struct VertexToPixel
     float3 normal :           NORMAL; // Normal
     float2 uv :               TEXCOORD;
     float3 worldPosition :    POSITION;
+    float3 tangent :          TANGENT;
 };
 
 #define LIGHT_TYPE_DIRECTIONAL 0
@@ -78,7 +80,7 @@ float3 ColorFromLight(float3 normal, float3 lightDir, float3 lightColor, float3 
     float diffuse = DiffuseBRDF(normal, -lightDir);
     float spec = SpecularBRDF(normal, lightDir, viewVec, roughness, roughnessScale);
 
-    return lightColor * colorTint * diffuse + spec;
+    return lightColor * colorTint * (diffuse + spec);
 }
 
 float Attenuate(Light light, float3 worldPos)

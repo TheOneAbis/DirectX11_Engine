@@ -75,8 +75,8 @@ void GameEntity::Draw(
 	ps->CopyAllBufferData();
 
 	// Set the shaders for this entity
-	material->GetVS()->SetShader();
-	material->GetPS()->SetShader();
+	vs->SetShader();
+	ps->SetShader();
 
 	// Draw the mesh
 	mesh->Draw();

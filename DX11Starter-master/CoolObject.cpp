@@ -24,7 +24,6 @@ void CoolObject::Init()
 
 void CoolObject::Update(float deltaTime)
 {
-	cout << "asd" << endl;
 	totalTime += deltaTime;
 	mousePos = 
 	{ 
