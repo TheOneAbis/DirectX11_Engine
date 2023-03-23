@@ -1,4 +1,5 @@
 #include "Material.h"
+#include <iostream>
 
 using namespace DirectX;
 using namespace std;
@@ -12,6 +13,7 @@ Material::Material(XMFLOAT4 color,
 	this->roughness = roughness;
 	vs = vertexShader;
 	ps = pixelShader;
+	textureBitMask = 0;
 }
 
 XMFLOAT4 Material::GetColor()
@@ -36,7 +38,7 @@ shared_ptr<SimplePixelShader> Material::GetPS()
 
 void Material::PrepareMaterial()
 {
-	ps->SetInt("usesTextures", usesTextures);
+	ps->SetInt("textureBitMask", textureBitMask);
 	// Bind the texture SRVs
 	for (auto& t : textureSRVs) 
 		ps->SetShaderResourceView(t.first.c_str(), t.second);
@@ -49,13 +51,6 @@ void Material::PrepareMaterial()
 // So that if the next material isn't using textures but the same shader, it will not end up using the texture from this material
 void Material::ResetTextureData()
 {
-	// No SRVs - not using textures
-	if (textureSRVs.size() == 0)
-	{
-		usesTextures = false;
-		return;
-	}
-
 	for (auto& t : textureSRVs)
 		ps->SetShaderResourceView(t.first.c_str(), 0);
 
@@ -65,6 +60,13 @@ void Material::ResetTextureData()
 
 void Material::AddTextureSRV(string name, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv)
 {
+	if (strcmp(name.c_str(), "AlbedoMap") == 0) // 1st bit
+		textureBitMask |= 1;
+	if (strcmp(name.c_str(), "SpecularMap") == 0) // 2nd bit
+		textureBitMask |= 2;
+	if (strcmp(name.c_str(), "NormalMap") == 0) // 3rd bit
+		textureBitMask |= 4;
+
 	textureSRVs.insert({ name, srv });
 }
 

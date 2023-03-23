@@ -31,7 +31,7 @@ VertexToPixel main( VertexShaderInput input )
 	// This normal is in LOCAL space, not WORLD space
 	// To go from local -> world, we need a world matrix (specifically its rotation and scale components)
     output.normal = mul((float3x3)worldInvTranspose, input.normal);
-	output.tangent = mul((float3x3)worldInvTranspose, input.tanget);
+	output.tangent = mul((float3x3)worldInvTranspose, input.tangent);
 
 	// Pass UV to PS
 	output.uv = input.uv;

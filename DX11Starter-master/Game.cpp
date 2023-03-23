@@ -193,19 +193,19 @@ void Game::CreateGeometry()
 
 	// Mat1 albedo
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/brokentiles.png").c_str(), 0, srv.GetAddressOf());
-	mats[0]->AddTextureSRV("SurfaceTexture", srv);
+	mats[0]->AddTextureSRV("AlbedoMap", srv);
 
 	// Mat1 specular
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/brokentiles_specular.png").c_str(), 0, srv.GetAddressOf());
-	mats[0]->AddTextureSRV("SpecularTexture", srv);
+	mats[0]->AddTextureSRV("SpecularMap", srv);
 
 	// Mat2 albedo
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/tiles.png").c_str(), 0, srv.GetAddressOf());
-	mats[1]->AddTextureSRV("SurfaceTexture", srv);
+	mats[1]->AddTextureSRV("AlbedoMap", srv);
 
 	// Mat2 specular
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/tiles_specular.png").c_str(), 0, srv.GetAddressOf());
-	mats[1]->AddTextureSRV("SpecularTexture", srv);
+	mats[1]->AddTextureSRV("SpecularMap", srv);
 
 	// Add default sampler for each material
 	for (std::shared_ptr<Material> mat : mats)

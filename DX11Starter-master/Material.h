@@ -36,5 +36,7 @@ private:
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> textureSRVs;
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11SamplerState>> samplers;
 
-	bool usesTextures;
+	//                               NormalMap SpecularMap AlbedoMap
+	// 00000000 00000000 00000000 00000  0          0         0
+	unsigned int textureBitMask;
 };

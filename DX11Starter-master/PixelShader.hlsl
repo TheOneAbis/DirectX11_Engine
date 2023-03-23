@@ -8,13 +8,13 @@ cbuffer ExternalData : register(b0)
     float roughness;
 	float3 cameraPosition;
 
-    bool usesTextures;
+    int textureBitMask;
     
     Light lights[MAX_LIGHT_COUNT];
 }
 
-Texture2D SurfaceTexture  : register(t0); // "t" registers for textures
-Texture2D SpecularTexture : register(t1); // Specular map
+Texture2D AlbedoMap : register(t0); // "t" registers for textures
+Texture2D SpecularMap : register(t1); // Specular map
 Texture2D NormalMap       : register(t2); // Normal map
 
 SamplerState BasicSampler : register(s0); // "s" registers for samplers
@@ -37,21 +37,25 @@ float4 main(VertexToPixel input) : SV_TARGET
     // Calculate vector from surface to camera
     float3 viewVector = normalize(cameraPosition - input.worldPosition);
 
-    // MUST re-normalize any interpolated vectors (rasterizer interpolates individual floats)
-    float3 normalFromMap = normalize(usesTextures ? NormalMap.Sample(BasicSampler, input.uv).rgb : input.normal);
+    // If we're using normal map
+    if ((textureBitMask & 4) == 4)
+    {
+        // Renormalize from the map if using normal map
+        float3 normalFromMap = normalize(NormalMap.Sample(BasicSampler, input.uv).rgb);
 
-    // rotate normal map to convert from tangent to world space
-    // Ensure we orthonormalize the tangent again
-    float3 N = input.normal;
-    float3 T = normalize(input.tangent - N * dot(N, input.tangent));
-    float3 B = cross(T, N);
-    float3x3 TBN = float3x3(T, B, N);
+        // rotate normal map to convert from tangent to world space
+        // Ensure we orthonormalize the tangent again
+        float3 N = input.normal;
+        float3 T = normalize(input.tangent - N * dot(N, input.tangent));
+        float3 B = cross(T, N);
+        float3x3 TBN = float3x3(T, B, N);
 
-    // multiply normal map vector by the TBN
-    input.normal = mul(normalFromMap, TBN);
+        // multiply normal map vector by the TBN
+        input.normal = mul(normalFromMap, TBN);
+    }
 
     // Sample the surface texture for the initial pixel color (scale texture if a scale was specified)
-    float3 surfaceColor = (usesTextures ? SurfaceTexture.Sample(BasicSampler, input.uv * textureScale).rgb : 1) * colorTint.xyz;
+    float3 surfaceColor = ((textureBitMask & 1) == 1 ? AlbedoMap.Sample(BasicSampler, input.uv * textureScale).rgb : 1) * colorTint.xyz;
     float3 totalLightColor = ambientColor * surfaceColor;
     
     float3 lightDir;
@@ -81,7 +85,7 @@ float4 main(VertexToPixel input) : SV_TARGET
             surfaceColor,
             viewVector,
             roughness,
-            usesTextures ? SpecularTexture.Sample(BasicSampler, input.uv * textureScale).r : 1) * lights[i].Intensity;
+            (textureBitMask & 2) == 2 ? SpecularMap.Sample(BasicSampler, input.uv * textureScale).r : 1) * lights[i].Intensity;
 
         // If this is a point or spot light, attenuate the color
         if (attenuate)
