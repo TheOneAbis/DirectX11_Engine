@@ -22,7 +22,7 @@ void CoolObject::Init()
 	GetTransform()->SetPosition(-4, 0, 0);
 }
 
-void CoolObject::Update(float deltaTime)
+void CoolObject::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
 	totalTime += deltaTime;
 	mousePos = 

@@ -27,7 +27,7 @@ public:
 	void SetTextureUniformScale(float scale);
 
 	virtual void Init();
-	virtual void Update(float deltaTime);
+	virtual void Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 	virtual void Draw(
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
 		std::shared_ptr<Camera> camPtr);

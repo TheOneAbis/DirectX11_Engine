@@ -58,9 +58,8 @@ float4 main(VertexToPixel input) : SV_TARGET
     float3 surfaceColor = ((textureBitMask & 1) == 1 ? AlbedoMap.Sample(BasicSampler, input.uv * textureScale).rgb : 1) * colorTint.xyz;
     float3 totalLightColor = ambientColor * surfaceColor;
     
-    float3 lightDir;
     bool attenuate = false;
-    
+    float3 lightDir;
     // Loop through the lights
     for (uint i = 0; i < MAX_LIGHT_COUNT; i++)
     {

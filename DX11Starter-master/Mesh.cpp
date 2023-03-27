@@ -5,6 +5,11 @@
 
 using namespace DirectX;
 
+Mesh::Mesh()
+{
+	this->indexCount = 0;
+}
+
 Mesh::Mesh(Vertex* vertices,
 	unsigned int numVerts,
 	unsigned int* indices,

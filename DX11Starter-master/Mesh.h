@@ -12,17 +12,22 @@ private:
 	// Vertex and index buffers, context pointer
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer;
+
+protected:
+
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context;
 
 	// Hold num indices in index buffer
 	unsigned int indexCount;
 
-	void CreateBuffers(Vertex* vertices, 
-		unsigned int numVerts, 
+	void CreateBuffers(Vertex* vertices,
+		unsigned int numVerts,
 		unsigned int* indices,
 		Microsoft::WRL::ComPtr<ID3D11Device> device);
 
 public:
+
+	Mesh();
 
 	Mesh(Vertex* vertices, 
 		unsigned int numVerts, 

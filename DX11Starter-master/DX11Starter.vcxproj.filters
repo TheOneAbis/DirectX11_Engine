@@ -89,6 +89,9 @@
     <ClCompile Include="Terrain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TerrainEntity.cpp">
+      <Filter>Source Files\Game Entity Subclass Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DXCore.h">
@@ -162,6 +165,9 @@
     </ClInclude>
     <ClInclude Include="Terrain.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TerrainEntity.h">
+      <Filter>Header Files\Game Entity Subclass Headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

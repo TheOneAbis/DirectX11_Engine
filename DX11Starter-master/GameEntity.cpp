@@ -47,7 +47,7 @@ void GameEntity::SetTextureUniformScale(float scale)
 void GameEntity::Init() {}
 
 // Update() is meant to be overriden by subclasses
-void GameEntity::Update(float deltaTime) {}
+void GameEntity::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {}
 
 void GameEntity::Draw(
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,

@@ -216,8 +216,8 @@ void Game::CreateGeometry()
 	gameObjects.push_back(new GameEntity(meshes[1], mats[1]));
 	gameObjects.push_back(new GameEntity(meshes[2], mats[2]));
 	gameObjects.push_back(new GameEntity(meshes[3], mats[0]));
-	gameObjects.push_back(new GameEntity(meshes[4], mats[0]));
 	gameObjects.push_back(new CoolObject(meshes[0], mats[3]));
+	gameObjects.push_back(new TerrainEntity(std::make_shared<Terrain>(20, 20, 1, device, context), mats[0])); // cool terrain entity
 	
 	// Call Init on all game entities in the world
 	for (GameEntity* obj : gameObjects)
@@ -227,9 +227,8 @@ void Game::CreateGeometry()
 	gameObjects[2]->GetTransform()->SetPosition(4, 0, 0);
 	gameObjects[3]->GetTransform()->SetPosition(8, 0, 0);
 	// ground texture
-	gameObjects[4]->GetTransform()->SetScale(10, 1, 10);
-	gameObjects[4]->SetTextureUniformScale(10.0f);
-	gameObjects[4]->GetTransform()->MoveAbsolute(0, -3, 0);
+	gameObjects[5]->SetTextureUniformScale(10.0f);
+	gameObjects[5]->GetTransform()->MoveAbsolute(-10, -3, -10);
 }
 
 
@@ -253,7 +252,7 @@ void Game::OnResize()
 void Game::Update(float deltaTime, float totalTime)
 {
 	for (GameEntity* gameObj : gameObjects)
-		gameObj->Update(deltaTime);
+		gameObj->Update(deltaTime, context);
 
 	// Do funny transformations on game objects
 	gameObjects[0]->GetTransform()->Rotate(0, 0, deltaTime);
