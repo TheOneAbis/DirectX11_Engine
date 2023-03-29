@@ -1,5 +1,5 @@
-#ifndef __GGP_SHADER_INCLUDES__
-#define __GGP_SHADER_INCLUDES__
+#ifndef __SHADER_INCLUDES__
+#define __SHADER_INCLUDES__
 
 // Struct representing a single vertex worth of data
 // - This should match the vertex definition in our C++ code
@@ -79,6 +79,16 @@ float3 ColorFromLight(float3 normal, float3 lightDir, float3 lightColor, float3 
     // Calculate diffuse an specular values
     float diffuse = DiffuseBRDF(normal, -lightDir);
     float spec = SpecularBRDF(normal, lightDir, viewVec, roughness, roughnessScale);
+    
+    // Cut the specular if the diffuse contribution is zero
+    // - any() returns 1 if any component of the param is non-zero
+    // - In this case, diffuse is a single float value
+    // - Meaning any() returns 1 if diffuse itself is non-zero
+    // - In other words:
+    // - If the diffuse amount is 0, any(diffuse) returns 0
+    // - If the diffuse amount is != 0, any(diffuse) returns 1
+    // - So when diffuse is 0, specular becomes 0
+    spec *= any(diffuse);
 
     return lightColor * colorTint * (diffuse + spec);
 }

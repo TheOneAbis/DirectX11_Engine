@@ -187,32 +187,34 @@ void Game::CreateGeometry()
 	std::vector<std::shared_ptr<Material>> mats;
 	mats.push_back(std::make_shared<Material>(white, 0.0f, vertexShader, pixelShader));
 	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 0, 1, 1), 0.0f, vertexShader, pixelShader));
-	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 1, 0, 1), 0.0f, vertexShader, pixelShader));
+	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.0f, vertexShader, pixelShader));
 	// weird material
 	mats.push_back(std::make_shared<Material>(white, 0.1f, vertexShader, customPS));
 
-	// Mat1 albedo
+	// Mat1 albedo and specular
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/brokentiles.png").c_str(), 0, srv.GetAddressOf());
 	mats[0]->AddTextureSRV("AlbedoMap", srv);
-
-	// Mat1 specular
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/brokentiles_specular.png").c_str(), 0, srv.GetAddressOf());
 	mats[0]->AddTextureSRV("SpecularMap", srv);
 
-	// Mat2 albedo
+	// Mat2 albedo and specular
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/tiles.png").c_str(), 0, srv.GetAddressOf());
 	mats[1]->AddTextureSRV("AlbedoMap", srv);
-
-	// Mat2 specular
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/tiles_specular.png").c_str(), 0, srv.GetAddressOf());
 	mats[1]->AddTextureSRV("SpecularMap", srv);
+
+	// Mat2 albedo and normal
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/rock.png").c_str(), 0, srv.GetAddressOf());
+	mats[2]->AddTextureSRV("AlbedoMap", srv);
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/rock_normals.png").c_str(), 0, srv.GetAddressOf());
+	mats[2]->AddTextureSRV("NormalMap", srv);
 
 	// Add default sampler for each material
 	for (std::shared_ptr<Material> mat : mats)
 		mat->AddSampler("BasicSampler", samplerState);
 
 	// Create the game objects
-	gameObjects.push_back(new GameEntity(meshes[0], mats[0]));
+	gameObjects.push_back(new GameEntity(meshes[0], mats[2]));
 	gameObjects.push_back(new GameEntity(meshes[1], mats[1]));
 	gameObjects.push_back(new GameEntity(meshes[2], mats[2]));
 	gameObjects.push_back(new GameEntity(meshes[3], mats[0]));

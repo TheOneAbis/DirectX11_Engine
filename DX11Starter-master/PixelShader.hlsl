@@ -41,16 +41,17 @@ float4 main(VertexToPixel input) : SV_TARGET
     if ((textureBitMask & 4) == 4)
     {
         // Renormalize from the map if using normal map
-        float3 normalFromMap = normalize(NormalMap.Sample(BasicSampler, input.uv).rgb);
-
-        // rotate normal map to convert from tangent to world space
+        float3 normalFromMap = normalize(NormalMap.Sample(BasicSampler, input.uv).rgb * 2 - 1); // scale 0 to 1 values to -1 to 1
+        
+        // rotate normal map to convert from tangent to world space (since our input values are already in world space from VS)
         // Ensure we orthonormalize the tangent again
-        float3 N = input.normal;
-        float3 T = normalize(input.tangent - N * dot(N, input.tangent));
-        float3 B = cross(T, N);
-        float3x3 TBN = float3x3(T, B, N);
+        float3 N = normalize(input.normal);  // Normal
+        float3 T = normalize(input.tangent); // Tangent
+        T = normalize(T - N * dot(T, N));    // Gram-Schmidt orthonomalizing of the Tangent
+        float3 B = cross(T, N);              // Bi-tangent
+        float3x3 TBN = float3x3(T, B, N);    // TBN rotation matrix
 
-        // multiply normal map vector by the TBN
+        // multiply normal map vector by the TBN matrix
         input.normal = mul(normalFromMap, TBN);
     }
 

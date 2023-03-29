@@ -92,6 +92,9 @@
     <ClCompile Include="TerrainEntity.cpp">
       <Filter>Source Files\Game Entity Subclass Sources</Filter>
     </ClCompile>
+    <ClCompile Include="Skybox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DXCore.h">
@@ -169,6 +172,9 @@
     <ClInclude Include="TerrainEntity.h">
       <Filter>Header Files\Game Entity Subclass Headers</Filter>
     </ClInclude>
+    <ClInclude Include="Skybox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="PixelShader.hlsl">
@@ -178,6 +184,12 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="CustomPS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="VertexShader_Skybox.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="PixelShader_Skybox.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

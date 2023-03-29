@@ -20,6 +20,8 @@ protected:
 	// Hold num indices in index buffer
 	unsigned int indexCount;
 
+	void CalculateTangents(Vertex* verts, int numVerts, unsigned int* indices, int numIndices);
+
 	void CreateBuffers(Vertex* vertices,
 		unsigned int numVerts,
 		unsigned int* indices,
