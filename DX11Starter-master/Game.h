@@ -6,6 +6,7 @@
 #include "DXCore.h"
 #include "SimpleShader.h"
 #include "Lights.h"
+#include "Skybox.h"
 
 #include "GameEntitySubclassIncludes.h"
 
@@ -39,6 +40,7 @@ private:
 	std::vector<GameEntity*> gameObjects; // pointers for polymorphic behavior
 	GameEntity uniqueObj;
 	std::vector<std::shared_ptr<Mesh>> meshes;
+	std::shared_ptr<Skybox> skybox;
 	std::vector<std::shared_ptr<Camera>> cams;
 	std::shared_ptr<Camera> activeCam;
 	int camIndex;
@@ -48,5 +50,9 @@ private:
 	// Shaders and shader-related constructs
 	std::shared_ptr<SimplePixelShader> pixelShader, customPS;
 	std::shared_ptr<SimpleVertexShader> vertexShader;
+
+	// Skybox shaders
+	std::shared_ptr<SimpleVertexShader> skyVS;
+	std::shared_ptr<SimplePixelShader> skyPS;
 };
 

@@ -9,5 +9,5 @@ SamplerState BasicSampler : register(s0);
 
 float4 main(VertexToPixel input) : SV_TARGET
 {
-    return skyboxTexture.Sample(BasicSampler, input.sampleDir);
+    return SkyboxTexture.Sample(BasicSampler, input.sampleDir);
 }

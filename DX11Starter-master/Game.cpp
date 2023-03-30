@@ -105,9 +105,9 @@ void Game::Init()
 	// NOTE: got rid of the other 2 directional lights; makes sense to only have one for the sunlight
 	Light newLight = {};
 	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
-	newLight.Direction = XMFLOAT3(-1.0f, -1.0f, 0.7f);
+	newLight.Direction = XMFLOAT3(0.0f, -0.3f,-1.0f);
 	newLight.Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	newLight.Intensity = 0.7f;
+	newLight.Intensity = 1.0f;
 	lights.push_back(newLight);
 
 	newLight = {};
@@ -143,6 +143,8 @@ void Game::LoadShaders()
 	vertexShader = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"VertexShader.cso").c_str());
 	pixelShader = std::make_shared<SimplePixelShader>(device, context, FixPath(L"PixelShader.cso").c_str());
 	customPS = std::make_shared<SimplePixelShader>(device, context, FixPath(L"CustomPS.cso").c_str());
+	skyVS = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"VertexShader_Skybox.cso").c_str());
+	skyPS = std::make_shared<SimplePixelShader>(device, context, FixPath(L"PixelShader_Skybox.cso").c_str());
 }
 
 
@@ -191,11 +193,11 @@ void Game::CreateGeometry()
 	// weird material
 	mats.push_back(std::make_shared<Material>(white, 0.1f, vertexShader, customPS));
 
-	// Mat1 albedo and specular
-	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/brokentiles.png").c_str(), 0, srv.GetAddressOf());
+	// Mat1 albedo and Normal
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/rock.png").c_str(), 0, srv.GetAddressOf());
 	mats[0]->AddTextureSRV("AlbedoMap", srv);
-	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/brokentiles_specular.png").c_str(), 0, srv.GetAddressOf());
-	mats[0]->AddTextureSRV("SpecularMap", srv);
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/rock_normals.png").c_str(), 0, srv.GetAddressOf());
+	mats[0]->AddTextureSRV("NormalMap", srv);
 
 	// Mat2 albedo and specular
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/tiles.png").c_str(), 0, srv.GetAddressOf());
@@ -204,9 +206,9 @@ void Game::CreateGeometry()
 	mats[1]->AddTextureSRV("SpecularMap", srv);
 
 	// Mat2 albedo and normal
-	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/rock.png").c_str(), 0, srv.GetAddressOf());
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/cobblestone.png").c_str(), 0, srv.GetAddressOf());
 	mats[2]->AddTextureSRV("AlbedoMap", srv);
-	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/rock_normals.png").c_str(), 0, srv.GetAddressOf());
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/cobblestone_normals.png").c_str(), 0, srv.GetAddressOf());
 	mats[2]->AddTextureSRV("NormalMap", srv);
 
 	// Add default sampler for each material
@@ -216,7 +218,12 @@ void Game::CreateGeometry()
 	// Create the game objects
 	gameObjects.push_back(new GameEntity(meshes[0], mats[2]));
 	gameObjects.push_back(new GameEntity(meshes[1], mats[1]));
+
 	gameObjects.push_back(new GameEntity(meshes[2], mats[2]));
+	gameObjects.push_back(new GameEntity(meshes[2], mats[2]));
+	gameObjects.push_back(new GameEntity(meshes[2], mats[2]));
+	gameObjects.push_back(new GameEntity(meshes[2], mats[2]));
+
 	gameObjects.push_back(new GameEntity(meshes[3], mats[0]));
 	gameObjects.push_back(new CoolObject(meshes[0], mats[3]));
 	gameObjects.push_back(new TerrainEntity(std::make_shared<Terrain>(20, 20, 1, device, context), mats[0])); // cool terrain entity
@@ -226,11 +233,29 @@ void Game::CreateGeometry()
 		obj->Init();
 
 	gameObjects[0]->GetTransform()->SetPosition(-8, 0, 0);
-	gameObjects[2]->GetTransform()->SetPosition(4, 0, 0);
-	gameObjects[3]->GetTransform()->SetPosition(8, 0, 0);
+
+	// right column
+	gameObjects[2]->GetTransform()->SetPosition(4, -2, -2);
+	gameObjects[3]->GetTransform()->SetPosition(4, 0, -2);
+	// left column
+	gameObjects[4]->GetTransform()->SetPosition(-4, -2, -2);
+	gameObjects[5]->GetTransform()->SetPosition(-4, 0, -2);
+
+	gameObjects[6]->GetTransform()->SetPosition(8, 0, 0);
+	gameObjects[7]->GetTransform()->SetPosition(0, 4, 2);
 	// ground texture
-	gameObjects[5]->SetTextureUniformScale(10.0f);
-	gameObjects[5]->GetTransform()->MoveAbsolute(-10, -3, -10);
+	gameObjects[8]->SetTextureUniformScale(10.0f);
+	gameObjects[8]->GetTransform()->MoveAbsolute(-10, -3, -10);
+
+	// Create the skybox
+	skybox = std::make_shared<Skybox>(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/cube.obj").c_str(), device, context), samplerState, device, context, skyVS, skyPS,
+		FixPath(L"../../Assets/Textures/Clouds Blue/right.png").c_str(),
+		FixPath(L"../../Assets/Textures/Clouds Blue/left.png").c_str(),
+		FixPath(L"../../Assets/Textures/Clouds Blue/up.png").c_str(),
+		FixPath(L"../../Assets/Textures/Clouds Blue/down.png").c_str(),
+		FixPath(L"../../Assets/Textures/Clouds Blue/front.png").c_str(),
+		FixPath(L"../../Assets/Textures/Clouds Blue/back.png").c_str()
+		);
 }
 
 
@@ -258,9 +283,7 @@ void Game::Update(float deltaTime, float totalTime)
 
 	// Do funny transformations on game objects
 	gameObjects[0]->GetTransform()->Rotate(0, 0, deltaTime);
-	gameObjects[2]->GetTransform()->Rotate(0, 0, deltaTime * 2);
-	gameObjects[1]->GetTransform()->MoveAbsolute(sinf(deltaTime / 10), 0, 0);
-	gameObjects[3]->GetTransform()->Rotate(0, 0, deltaTime / 3);
+	gameObjects[6]->GetTransform()->Rotate(0, 0, deltaTime / 3);
 
 	activeCam->Update(deltaTime);
 	activeCam->UpdateViewMatrix();
@@ -391,7 +414,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		context->ClearDepthStencilView(depthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
 
-	XMFLOAT3 ambientColor = { 0.15f, 0.15f, 0.15f };
+	XMFLOAT3 ambientColor = { 0.25f, 0.25f, 0.25f };
 	
 	// Render Game entities
 	for (GameEntity* gameObject : gameObjects)
@@ -404,6 +427,9 @@ void Game::Draw(float deltaTime, float totalTime)
 		
 		gameObject->Draw(context, activeCam);
 	}
+
+	// Render the skybox
+	skybox->Draw(context, activeCam);
 
 	// Render the UI
 	ImGui::Render();

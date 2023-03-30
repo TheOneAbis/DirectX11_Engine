@@ -41,7 +41,7 @@ float4 main(VertexToPixel input) : SV_TARGET
     if ((textureBitMask & 4) == 4)
     {
         // Renormalize from the map if using normal map
-        float3 normalFromMap = normalize(NormalMap.Sample(BasicSampler, input.uv).rgb * 2 - 1); // scale 0 to 1 values to -1 to 1
+        float3 normalFromMap = normalize(NormalMap.Sample(BasicSampler, input.uv * textureScale).rgb * 2 - 1); // scale 0 to 1 values to -1 to 1
         
         // rotate normal map to convert from tangent to world space (since our input values are already in world space from VS)
         // Ensure we orthonormalize the tangent again

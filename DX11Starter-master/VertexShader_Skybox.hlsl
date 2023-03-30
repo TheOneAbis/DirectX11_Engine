@@ -18,7 +18,7 @@ cbuffer ExternalData : register(b0)
     matrix projection;
 }
 
-VertexShaderInput main(VertexShaderInput input)
+VertexToPixel main(VertexShaderInput input)
 {
     VertexToPixel output;
     
