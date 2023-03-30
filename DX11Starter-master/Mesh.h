@@ -2,6 +2,7 @@
 
 #include <d3d11.h>
 #include <wrl/client.h>
+#include <vector>
 #include "DXCore.h"
 #include "Vertex.h"
 
@@ -25,9 +26,12 @@ protected:
 	void CreateBuffers(Vertex* vertices,
 		unsigned int numVerts,
 		unsigned int* indices,
-		Microsoft::WRL::ComPtr<ID3D11Device> device);
+		Microsoft::WRL::ComPtr<ID3D11Device> device,
+		bool dynamic);
 
 public:
+
+	std::vector<Vertex> vertices;
 
 	Mesh();
 
@@ -47,6 +51,6 @@ public:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> GetVertexBuffer();
 	Microsoft::WRL::ComPtr<ID3D11Buffer> GetIndexBuffer();
 	unsigned int GetIndexCount();
-	void Draw();
+	virtual void Draw();
 
 };

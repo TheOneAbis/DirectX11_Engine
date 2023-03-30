@@ -1,5 +1,4 @@
 #include "Terrain.h"
-
 #include <vector>
 
 using namespace std;
@@ -45,6 +44,17 @@ Terrain::Terrain(unsigned int rows, unsigned int columns, float spaceBetween,
 
 	// set context and index count, then create VBOs and IBOs
 	this->context = context;
-	this->indexCount = indices.size();
-	CreateBuffers(&vertices[0], vertices.size(), &indices[0], device);
+	this->vertices = vertices;
+	this->indexCount = (unsigned int)indices.size();
+	CreateBuffers(&vertices[0], (unsigned int)vertices.size(), &indices[0], device, true);
+}
+
+void Terrain::Draw()
+{
+	D3D11_MAPPED_SUBRESOURCE vData = {}; // will hold a POINTER to vertex buffer in GPU memory
+	context->Map(GetVertexBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &vData); // lock vertex buffer and get us pointer to it
+	memcpy(vData.pData, &vertices[0], sizeof(Vertex) * vertices.size()); // copy from vertices to GPU
+	context->Unmap(GetVertexBuffer().Get(), 0); // Unlock vertex buffer w/ new data
+
+	Mesh::Draw(); // call the parent's draw method to draw the terrain on the screen
 }

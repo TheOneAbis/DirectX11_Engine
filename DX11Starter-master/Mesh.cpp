@@ -1,7 +1,6 @@
 #include "Mesh.h"
 #include <iostream>
 #include <fstream>
-#include <vector>
 
 using namespace DirectX;
 
@@ -21,7 +20,7 @@ Mesh::Mesh(Vertex* vertices,
 	this->context = context;
 	this->indexCount = numIndices;
 
-	CreateBuffers(vertices, numVerts, indices, device);
+	CreateBuffers(vertices, numVerts, indices, device, false);
 }
 
 Mesh::Mesh(const wchar_t* fileName,
@@ -231,12 +230,13 @@ Mesh::Mesh(const wchar_t* fileName,
 
 	// Close the file and create the actual buffers
 	obj.close();
+	this->vertices = verts;
 	this->indexCount = indexCounter;
 
 	// calculate vertex tangents before creating buffers
 	CalculateTangents(&verts[0], vertCounter, &indices[0], indexCount);
 
-	CreateBuffers(&verts[0], vertCounter, &indices[0], device);
+	CreateBuffers(&verts[0], vertCounter, &indices[0], device, false);
 
 	// - At this point, "verts" is a vector of Vertex structs, and can be used
 	//    directly to create a vertex buffer:  &verts[0] is the address of the first vert
@@ -342,10 +342,11 @@ void Mesh::CalculateTangents(Vertex* verts, int numVerts, unsigned int* indices,
 	}
 }
 
-void Mesh::CreateBuffers(Vertex* vertices, 
-	unsigned int numVerts, 
+void Mesh::CreateBuffers(Vertex* vertices,
+	unsigned int numVerts,
 	unsigned int* indices,
-	Microsoft::WRL::ComPtr<ID3D11Device> device)
+	Microsoft::WRL::ComPtr<ID3D11Device> device,
+	bool dynamic = false)
 {
 	// Create a VERTEX BUFFER
 	// - This holds the vertex data of triangles for a single object
@@ -356,10 +357,10 @@ void Mesh::CreateBuffers(Vertex* vertices,
 		//  - Note that this variable is created on the stack since we only need it once
 		//  - After the buffer is created, this description variable is unnecessary
 		D3D11_BUFFER_DESC vbd = {};
-		vbd.Usage = D3D11_USAGE_IMMUTABLE;	// Will NEVER change
+		vbd.Usage = dynamic ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_IMMUTABLE; // should not change unless set to be
 		vbd.ByteWidth = sizeof(Vertex) * numVerts;       // 3 = number of vertices in the buffer
 		vbd.BindFlags = D3D11_BIND_VERTEX_BUFFER; // Tells Direct3D this is a vertex buffer
-		vbd.CPUAccessFlags = 0;	// Note: We cannot access the data from C++ (this is good)
+		vbd.CPUAccessFlags = dynamic ? D3D11_CPU_ACCESS_WRITE : 0;
 		vbd.MiscFlags = 0;
 		vbd.StructureByteStride = 0;
 
