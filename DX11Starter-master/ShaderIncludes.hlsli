@@ -90,7 +90,7 @@ float3 ColorFromLight(float3 normal, float3 lightDir, float3 lightColor, float3 
     // - So when diffuse is 0, specular becomes 0
     spec *= any(diffuse);
 
-    return lightColor * colorTint * (diffuse + spec);
+    return lightColor * colorTint * diffuse + spec;
 }
 
 float Attenuate(Light light, float3 worldPos)

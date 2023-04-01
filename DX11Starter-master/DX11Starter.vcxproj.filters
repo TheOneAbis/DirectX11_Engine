@@ -192,11 +192,17 @@
     <FxCompile Include="PixelShader_Skybox.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="VS_Terrain.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="ShaderIncludes.hlsli">
       <Filter>Shaders</Filter>
     </None>
     <None Include="packages.config" />
+    <None Include="Noise.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

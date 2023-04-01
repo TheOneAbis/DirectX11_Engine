@@ -4,7 +4,10 @@
 #include <locale>
 
 #include "Helpers.h"
+#include <DirectXMath.h>
+#include <iostream>
 
+using namespace DirectX;
 
 // --------------------------------------------------------------------------
 // Gets the actual path to this executable as a wide character string (wstring)
@@ -85,4 +88,146 @@ std::wstring NarrowToWide(const std::string& str)
 {
 	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 	return converter.from_bytes(str);
+}
+
+// ================================= //
+// -- PerlinObject Implementation -- //
+// ================================= //
+
+PerlinObject::PerlinObject()
+{
+	this->wrap = 256;
+
+	// Create array (permutation table) and shuffle it
+	perlinTable = new int[wrap * 2];
+	for (int i = 0; i < wrap; i++)
+		perlinTable[i] = i;
+	
+	// Shuffle the array
+	for (int e = wrap - 1; e > 0; e--) {
+		const int index = e - 1 == 0 ? 0 : rand() % (e - 1);
+		const int temp = perlinTable[e];
+
+		perlinTable[e] = perlinTable[index];
+		perlinTable[index] = temp;
+	}
+
+	// Duplicate the array
+	for (int i = wrap; i < wrap * 2; i++)
+		perlinTable[i] = perlinTable[i - wrap];
+}
+
+PerlinObject::PerlinObject(int wrapValue)
+{
+	this->wrap = wrapValue;
+
+	// Create array (permutation table) and shuffle it
+	perlinTable = new int[wrap * 2];
+	for (int i = 0; i < wrap; i++)
+		perlinTable[i] = i;
+
+	// Shuffle the array
+	for (int e = wrap - 1; e > 0; e--) {
+		const int index = e - 1 == 0 ? 0 : rand() % (e - 1);
+		const int temp = perlinTable[e];
+
+		perlinTable[e] = perlinTable[index];
+		perlinTable[index] = temp;
+	}
+
+	// Duplicate the array
+	for (int i = wrap; i < wrap * 2; i++)
+		perlinTable[i] = perlinTable[i - wrap];
+}
+
+PerlinObject& PerlinObject::operator=(const PerlinObject& other)
+{
+	this->wrap = other.wrap;
+	this->perlinTable = new int[wrap * 2];
+	for (int i = 0; i < wrap * 2; i++)
+		this->perlinTable[i] = other.perlinTable[i];
+	return *this;
+}
+
+PerlinObject::~PerlinObject()
+{
+	delete[] perlinTable;
+}
+
+// Implementation of Perlin Noise. 
+// Source Article: https://rtouti.github.io/graphics/perlin-noise-algorithm
+float PerlinObject::Perlin2D(float x, float y)
+{
+	const int X = (int)x & (wrap - 1);	// Noise wraps at x = 256
+	const int Y = (int)y & (wrap - 1);	// Noise wraps at y = 256
+	const float xf = x - (int)x;
+	const float yf = y - (int)y;
+
+	// Vectors pointing from grid points TO input point
+	XMFLOAT2 topRight = { xf - 1.0f, yf - 1.0f };
+	XMFLOAT2 topLeft = { xf, yf - 1.0f };
+	XMFLOAT2 bottomRight = { xf - 1.0f, yf };
+	XMFLOAT2 bottomLeft = { xf, yf };
+
+	// Helper to get the constant vector for a corner
+	auto GetConstantVector = [](int v)
+	{
+		// v is the value from the permutation table
+		const int h = v & 3; // equivalent to v % 4
+		if (h == 0)
+			return XMFLOAT2(1.0, 1.0);
+		else if (h == 1)
+			return XMFLOAT2(-1.0, 1.0);
+		else if (h == 2)
+			return XMFLOAT2(-1.0, -1.0);
+		else
+			return XMFLOAT2(1.0, -1.0);
+	};
+
+	// Select a value in the array for each of the 4 corners
+	const XMFLOAT2 vecTopRight = GetConstantVector(perlinTable[perlinTable[X + 1] + Y + 1]);
+	const XMFLOAT2 vecTopLeft = GetConstantVector(perlinTable[perlinTable[X] + Y + 1]);
+	const XMFLOAT2 vecBottomRight = GetConstantVector(perlinTable[perlinTable[X + 1] + Y]);
+	const XMFLOAT2 vecBottomLeft = GetConstantVector(perlinTable[perlinTable[X] + Y]);
+
+	// Calculate dot products of each corner
+	float dotTopRight;
+	float dotTopLeft;
+	float dotBottomRight;
+	float dotBottomLeft;
+	XMStoreFloat(&dotTopRight, XMVector2Dot(XMLoadFloat2(&topRight), XMLoadFloat2(&vecTopRight)));
+	XMStoreFloat(&dotTopLeft, XMVector2Dot(XMLoadFloat2(&topLeft), XMLoadFloat2(&vecTopLeft)));
+	XMStoreFloat(&dotBottomRight, XMVector2Dot(XMLoadFloat2(&bottomRight), XMLoadFloat2(&vecBottomRight)));
+	XMStoreFloat(&dotBottomLeft, XMVector2Dot(XMLoadFloat2(&bottomLeft), XMLoadFloat2(&vecBottomLeft)));
+	
+	// quick ease function (this is what Ken Perlin used)
+	auto Fade = [](float t) {return ((6.0f * t - 15.0f) * t + 10.0f) * t * t * t; }; 
+
+	// Interpolate x and y to get final value
+	const float u = Fade(xf);
+	const float v = Fade(yf);
+	float result;
+
+	XMStoreFloat(&result, XMVectorLerp(
+		XMVectorLerp(XMLoadFloat(&dotBottomLeft), XMLoadFloat(&dotTopLeft), v),
+		XMVectorLerp(XMLoadFloat(&dotBottomRight), XMLoadFloat(&dotTopRight), v), u)
+	);
+
+	return result;
+}
+
+float PerlinObject::FractalBrownianMotion(float x, float y, int numOctaves) 
+{
+	float result = 0.0f;
+	float amplitude = 1.0f;
+	float frequency = 0.005f;
+
+	for (int octave = 0; octave < numOctaves; octave++) {
+		result += amplitude * Perlin2D(x * frequency, y * frequency);
+
+		amplitude *= 0.5f;
+		frequency *= 2.0f;
+	}
+
+	return result;
 }

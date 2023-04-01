@@ -41,6 +41,8 @@ Game::Game(HINSTANCE hInstance)
 	printf("Console window created successfully.  Feel free to printf() here.\n");
 #endif
 
+	// Initialize random seed for future use as well
+	srand(time(NULL));
 	camIndex = 0;
 }
 
@@ -190,6 +192,7 @@ void Game::CreateGeometry()
 	mats.push_back(std::make_shared<Material>(white, 0.0f, vertexShader, pixelShader));
 	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 0, 1, 1), 0.0f, vertexShader, pixelShader));
 	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.0f, vertexShader, pixelShader));
+	mats.push_back(std::make_shared<Material>(XMFLOAT4(0.15, 0.15, 0.4f, 1), 0.0f, vertexShader, pixelShader));
 	// weird material
 	mats.push_back(std::make_shared<Material>(white, 0.1f, vertexShader, customPS));
 
@@ -225,8 +228,8 @@ void Game::CreateGeometry()
 	gameObjects.push_back(new GameEntity(meshes[2], mats[2]));
 
 	gameObjects.push_back(new GameEntity(meshes[3], mats[0]));
-	gameObjects.push_back(new CoolObject(meshes[0], mats[3]));
-	gameObjects.push_back(new TerrainEntity(std::make_shared<Terrain>(20, 20, 1, device, context), mats[0])); // cool terrain entity
+	gameObjects.push_back(new CoolObject(meshes[0], mats[4]));
+	gameObjects.push_back(new TerrainEntity(std::make_shared<Terrain>(80, 80, 0.5f, device, context), mats[3], XMFLOAT2(40, 40), 0.25f)); // cool terrain entity
 	
 	// Call Init on all game entities in the world
 	for (GameEntity* obj : gameObjects)

@@ -8,11 +8,12 @@ Terrain::Terrain(unsigned int rows, unsigned int columns, float spaceBetween,
 	Microsoft::WRL::ComPtr<ID3D11Device> device,
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
+	resolution = XMINT2(columns, rows);
 	vector<Vertex> vertices;
 	vector<unsigned int> indices;
 
 	// Create the vertex array
-	for (unsigned int i = 0; i < rows; i++) // down
+	for (unsigned int i = 0; i < rows; i++) // up
 	{
 		for (unsigned int j = 0; j < columns; j++) // right
 		{
@@ -26,9 +27,9 @@ Terrain::Terrain(unsigned int rows, unsigned int columns, float spaceBetween,
 	}
 
 	// Create the index array
-	for (unsigned int i = 0; i < columns - 1; i++)
+	for (unsigned int i = 0; i < rows - 1; i++)
 	{
-		for (unsigned int j = 0; j < rows - 1; j++)
+		for (unsigned int j = 0; j < columns - 1; j++)
 		{
 			// tri 1
 			indices.push_back(j + (i * rows));

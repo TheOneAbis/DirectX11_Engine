@@ -12,5 +12,7 @@ public:
 
 	void Draw() override;
 
+	DirectX::XMINT2 resolution;
+
 private:
 };
