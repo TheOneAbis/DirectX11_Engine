@@ -58,7 +58,7 @@ float Perlin2D(float x, float y, int permutation[512])
         lerp(dotBottomRight, dotTopRight, v), u);
 }
 
-float FractalBrownianMotion(float x, float y, int numOctaves, int perlinTable[512])
+float FractalBrownianMotion(float x, float y, int numOctaves, int permutation[512])
 {
     float result = 0.0f;
     float amplitude = 1.0f;
@@ -66,7 +66,7 @@ float FractalBrownianMotion(float x, float y, int numOctaves, int perlinTable[51
 
     for (int octave = 0; octave < numOctaves; octave++)
     {
-        result += amplitude * Perlin2D(x * frequency, y * frequency, perlinTable);
+        result += amplitude * Perlin2D(x * frequency, y * frequency, permutation);
 
         amplitude *= 0.5f;
         frequency *= 2.0f;

@@ -13,9 +13,9 @@ cbuffer ExternalData : register(b0)
     Light lights[MAX_LIGHT_COUNT];
 }
 
-Texture2D AlbedoMap : register(t0); // "t" registers for textures
+Texture2D AlbedoMap   : register(t0); // "t" registers for textures
 Texture2D SpecularMap : register(t1); // Specular map
-Texture2D NormalMap       : register(t2); // Normal map
+Texture2D NormalMap   : register(t2); // Normal map
 
 SamplerState BasicSampler : register(s0); // "s" registers for samplers
 
