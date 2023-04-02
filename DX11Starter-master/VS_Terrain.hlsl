@@ -25,7 +25,7 @@ VertexToPixel main(VertexShaderInput input)
 	// Set up output struct
     VertexToPixel output;
     
-    // Alter the y translation portion of world matrix w/ perlin noise
+    // Alter the y w/ fractal perlin noise (only 1 octave, can be expensive if increased)
     input.localPosition.y += FractalBrownianMotion(
         input.localPosition.x * noiseDensity.x + noiseOffset, 
         input.localPosition.z * noiseDensity.y, 
@@ -40,14 +40,11 @@ VertexToPixel main(VertexShaderInput input)
     output.worldPosition = mul(world, float4(input.localPosition, 1.0f)).xyz;
 
 	// This normal is in LOCAL space, not WORLD space
-	// To go from local -> world, we need a world matrix (specifically its rotation and scale components)
     output.normal = mul((float3x3) worldInvTranspose, input.normal);
     output.tangent = mul((float3x3) world, input.tangent);
 
 	// Pass UV to PS
     output.uv = input.uv;
-
-	// Whatever we return will make its way through the pipeline to the
-	// next programmable stage we're using (the pixel shader for now)
+    
     return output;
 }
