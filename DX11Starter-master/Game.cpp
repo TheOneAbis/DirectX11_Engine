@@ -109,7 +109,7 @@ void Game::Init()
 	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
 	newLight.Direction = XMFLOAT3(0.0f, -0.3f,-1.0f);
 	newLight.Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	newLight.Intensity = 1.0f;
+	newLight.Intensity = 3.0f;
 	lights.push_back(newLight);
 
 	newLight = {};
@@ -144,9 +144,13 @@ void Game::LoadShaders()
 	// Make the shaders with SimpleShader (to see how to make them normally, check previous versions of this project)
 	vertexShader = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"VertexShader.cso").c_str());
 	pixelShader = std::make_shared<SimplePixelShader>(device, context, FixPath(L"PixelShader.cso").c_str());
+
 	customPS = std::make_shared<SimplePixelShader>(device, context, FixPath(L"CustomPS.cso").c_str());
+
 	skyVS = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"VertexShader_Skybox.cso").c_str());
 	skyPS = std::make_shared<SimplePixelShader>(device, context, FixPath(L"PixelShader_Skybox.cso").c_str());
+
+	terrainVS = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"VS_Terrain.cso").c_str());
 }
 
 
@@ -192,7 +196,7 @@ void Game::CreateGeometry()
 	mats.push_back(std::make_shared<Material>(white, 0.0f, vertexShader, pixelShader));
 	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 0, 1, 1), 0.0f, vertexShader, pixelShader));
 	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.0f, vertexShader, pixelShader));
-	mats.push_back(std::make_shared<Material>(XMFLOAT4(0.15, 0.15, 0.4f, 1), 0.0f, vertexShader, pixelShader));
+	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.0f, terrainVS, pixelShader));
 	// weird material
 	mats.push_back(std::make_shared<Material>(white, 0.1f, vertexShader, customPS));
 
@@ -211,9 +215,11 @@ void Game::CreateGeometry()
 	// Mat2 albedo and normal
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/cobblestone.png").c_str(), 0, srv.GetAddressOf());
 	mats[2]->AddTextureSRV("AlbedoMap", srv);
+	mats[3]->AddTextureSRV("AlbedoMap", srv);
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/cobblestone_normals.png").c_str(), 0, srv.GetAddressOf());
 	mats[2]->AddTextureSRV("NormalMap", srv);
-
+	mats[3]->AddTextureSRV("NormalMap", srv);
+	
 	// Add default sampler for each material
 	for (std::shared_ptr<Material> mat : mats)
 		mat->AddSampler("BasicSampler", samplerState);
@@ -229,7 +235,7 @@ void Game::CreateGeometry()
 
 	gameObjects.push_back(new GameEntity(meshes[3], mats[0]));
 	gameObjects.push_back(new CoolObject(meshes[0], mats[4]));
-	gameObjects.push_back(new TerrainEntity(std::make_shared<Terrain>(80, 80, 0.5f, device, context), mats[3], XMFLOAT2(40, 40), 0.25f)); // cool terrain entity
+	gameObjects.push_back(new TerrainEntity(std::make_shared<Terrain>(500, 500, device, context), mats[3], XMFLOAT2(50.0f, 50.0f))); // cool terrain entity
 	
 	// Call Init on all game entities in the world
 	for (GameEntity* obj : gameObjects)
@@ -247,8 +253,9 @@ void Game::CreateGeometry()
 	gameObjects[6]->GetTransform()->SetPosition(8, 0, 0);
 	gameObjects[7]->GetTransform()->SetPosition(0, 4, 2);
 	// ground texture
-	gameObjects[8]->SetTextureUniformScale(10.0f);
-	gameObjects[8]->GetTransform()->MoveAbsolute(-10, -3, -10);
+	gameObjects[8]->GetTransform()->MoveAbsolute(-10, -2, -10);
+	gameObjects[8]->GetTransform()->SetScale(0.05f, 0.05f, 0.05f);
+	gameObjects[8]->SetTextureUniformScale(0.01f);
 
 	// Create the skybox
 	skybox = std::make_shared<Skybox>(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/cube.obj").c_str(), device, context), samplerState, device, context, skyVS, skyPS,

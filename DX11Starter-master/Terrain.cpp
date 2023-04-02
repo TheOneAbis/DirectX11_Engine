@@ -4,7 +4,7 @@
 using namespace std;
 using namespace DirectX;
 
-Terrain::Terrain(unsigned int rows, unsigned int columns, float spaceBetween,
+Terrain::Terrain(unsigned int rows, unsigned int columns,
 	Microsoft::WRL::ComPtr<ID3D11Device> device,
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
@@ -18,9 +18,9 @@ Terrain::Terrain(unsigned int rows, unsigned int columns, float spaceBetween,
 		for (unsigned int j = 0; j < columns; j++) // right
 		{
 			vertices.push_back({
-				XMFLOAT3(i * spaceBetween, 0, j * spaceBetween), // position
+				XMFLOAT3(i, 0, j), // position
 				XMFLOAT3(0, 1, 0), // normal
-				XMFLOAT2((float)i / (float)rows, (float)j / (float)columns),    // UV
+				XMFLOAT2(i, j),    // UV
 				XMFLOAT3(1, 0, 0)  // tangent
 				});
 		}
@@ -47,15 +47,15 @@ Terrain::Terrain(unsigned int rows, unsigned int columns, float spaceBetween,
 	this->context = context;
 	this->vertices = vertices;
 	this->indexCount = (unsigned int)indices.size();
-	CreateBuffers(&vertices[0], (unsigned int)vertices.size(), &indices[0], device, true);
+	CreateBuffers(&vertices[0], (unsigned int)vertices.size(), &indices[0], device);
 }
 
-void Terrain::Draw()
-{
-	D3D11_MAPPED_SUBRESOURCE vData = {}; // will hold a POINTER to vertex buffer in GPU memory
-	context->Map(GetVertexBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &vData); // lock vertex buffer and get us pointer to it
-	memcpy(vData.pData, &vertices[0], sizeof(Vertex) * vertices.size()); // copy from vertices to GPU
-	context->Unmap(GetVertexBuffer().Get(), 0); // Unlock vertex buffer w/ new data
-
-	Mesh::Draw(); // call the parent's draw method to draw the terrain on the screen
-}
+//void Terrain::Draw()
+//{
+//	D3D11_MAPPED_SUBRESOURCE vData = {}; // will hold a POINTER to vertex buffer in GPU memory
+//	context->Map(GetVertexBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &vData); // lock vertex buffer and get us pointer to it
+//	memcpy(vData.pData, &vertices[0], sizeof(Vertex) * vertices.size()); // copy from vertices to GPU
+//	context->Unmap(GetVertexBuffer().Get(), 0); // Unlock vertex buffer w/ new data
+//
+//	Mesh::Draw(); // call the parent's draw method to draw the terrain on the screen
+//}

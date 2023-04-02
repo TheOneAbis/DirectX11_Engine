@@ -5,34 +5,46 @@
 using namespace std;
 using namespace DirectX;
 
-TerrainEntity::TerrainEntity(std::shared_ptr<Terrain> mesh, std::shared_ptr<Material> material, XMFLOAT2 noiseDensity, float height) : GameEntity(mesh, material)
+TerrainEntity::TerrainEntity(std::shared_ptr<Terrain> mesh, std::shared_ptr<Material> material, XMFLOAT2 noiseDensity) : GameEntity(mesh, material)
 {
-	perlin = PerlinObject(256);
-	noiseOffset = 0.0f;
-	terrainMesh = mesh;
 	this->noiseDensity = noiseDensity;
-	this->height = height;
+	this->noiseOffset = 0.0f;
 
-	for (unsigned int y = 0; y < mesh->resolution.y; y++)
-	{
-		for (unsigned int x = 0; x < mesh->resolution.x; x++)
-		{
-			mesh->vertices[x + mesh->resolution.y * y].Position.y = 
-				perlin.Perlin2D(x * 0.01f * noiseDensity.x, y * 0.01f * noiseDensity.y) * height;
-		}
-	}
+	//// Create array (permutation table) and shuffle it
+	//for (int i = 0; i < 256; i++)
+	//	permutation[i] = i;
+
+	//// Shuffle the array
+	//for (int e = 256 - 1; e > 0; e--) {
+	//	const int index = e - 1 == 0 ? 0 : rand() % (e - 1);
+	//	const int temp = permutation[e];
+
+	//	permutation[e] = permutation[index];
+	//	permutation[index] = temp;
+	//}
+
+	//// Duplicate the array
+	//for (int i = 256; i < 256 * 2; i++)
+	//	permutation[i] = permutation[i - 256];
+	//for (int i = 0; i < 512; i++)
+	//{
+	//	if (permutation[i] == 0) cout << permutation[i] << endl;
+	//}
 }
 
 void TerrainEntity::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
-	noiseOffset += deltaTime / 2.0f;
+	noiseOffset += deltaTime * 200.0f;
+}
 
-	for (unsigned int y = 0; y < terrainMesh->resolution.y; y++)
-	{
-		for (unsigned int x = 0; x < terrainMesh->resolution.x; x++)
-		{
-			terrainMesh->vertices[x + terrainMesh->resolution.y * y].Position.y =
-				perlin.Perlin2D(x * 0.01f * noiseDensity.x + noiseOffset, y * 0.01f * noiseDensity.y) * height;
-		}
-	}	
+void TerrainEntity::Draw(
+	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, shared_ptr<Camera> camPtr)
+{
+	// Set permutation table and noise offsets in terrain vertex shader
+	//GetMaterial()->GetVS()->SetData("permutation", &permutation[0], sizeof(int) * 512); // not working idk why
+	GetMaterial()->GetVS()->SetFloat("noiseOffset", noiseOffset);
+	GetMaterial()->GetVS()->SetFloat2("noiseDensity", noiseDensity);
+
+	// Do the rest of the normal drawing stuff
+	GameEntity::Draw(context, camPtr);
 }

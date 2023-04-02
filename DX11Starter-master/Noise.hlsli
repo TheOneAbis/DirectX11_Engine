@@ -8,14 +8,14 @@ float2 GetConstantVector(int v)
 {
 		// v is the value from the permutation table
     const int h = v & 3; // equivalent to v % 4
-    if (h == 0)
-        return float2(1.0, 1.0);
-    else if (h == 1)
-        return float2(-1.0, 1.0);
-    else if (h == 2)
-        return float2(-1.0, -1.0);
-    else
-        return float2(1.0, -1.0);
+    
+    switch (h)
+    {
+        case 0:  return float2(1.0, 1.0);
+        case 1:  return float2(-1.0, 1.0);
+        case 2:  return float2(-1.0, -1.0);
+        default: return float2(1.0, -1.0);
+    }
 }
 
 // quick ease function (this is what Ken Perlin used)
@@ -24,24 +24,24 @@ float Fade(float t)
     return ((6.0f * t - 15.0f) * t + 10.0f) * t * t * t;
 }
 
-float Perlin2D(float x, float y, int wrap, int perlinTable[])
+float Perlin2D(float x, float y, int permutation[512])
 {
-    const int X = (int) floor(x) & (wrap - 1);
-    const int Y = (int) floor(y) & (wrap - 1);
-    const float xf = x - (int) floor(x);
-    const float yf = y - (int) floor(y);
+    const int X = (int)x & 255;
+    const int Y = (int)y & 255;
+    const float xf = x - (int)x;
+    const float yf = y - (int)y;
 
 	// Vectors pointing from grid points TO input point
-    float2 topRight = { xf - 1.0f, yf - 1.0f };
-    float2 topLeft = { xf, yf - 1.0f };
-    float2 bottomRight = { xf - 1.0f, yf };
-    float2 bottomLeft = { xf, yf };
+    float2 topRight = float2(xf - 1.0f, yf - 1.0f);
+    float2 topLeft = float2(xf, yf - 1.0f);
+    float2 bottomRight = float2(xf - 1.0f, yf);
+    float2 bottomLeft = float2(xf, yf);
 
 	// Select a value in the array for each of the 4 corners
-    const float2 vecTopRight = GetConstantVector(perlinTable[perlinTable[X + 1] + Y + 1]);
-    const float2 vecTopLeft = GetConstantVector(perlinTable[perlinTable[X] + Y + 1]);
-    const float2 vecBottomRight = GetConstantVector(perlinTable[perlinTable[X + 1] + Y]);
-    const float2 vecBottomLeft = GetConstantVector(perlinTable[perlinTable[X] + Y]);
+    float2 vecTopRight = GetConstantVector(permutation[permutation[X + 1] + Y + 1]);
+    float2 vecTopLeft = GetConstantVector(permutation[permutation[X] + Y + 1]);
+    float2 vecBottomRight = GetConstantVector(permutation[permutation[X + 1] + Y]);
+    float2 vecBottomLeft = GetConstantVector(permutation[permutation[X] + Y]);
 
 	// Calculate dot products of each corner
     float dotTopRight = dot(topRight, vecTopRight);
@@ -58,7 +58,7 @@ float Perlin2D(float x, float y, int wrap, int perlinTable[])
         lerp(dotBottomRight, dotTopRight, v), u);
 }
 
-float FractalBrownianMotion(float x, float y, int numOctaves, int wrap, int perlinTable[])
+float FractalBrownianMotion(float x, float y, int numOctaves, int perlinTable[512])
 {
     float result = 0.0f;
     float amplitude = 1.0f;
@@ -66,7 +66,7 @@ float FractalBrownianMotion(float x, float y, int numOctaves, int wrap, int perl
 
     for (int octave = 0; octave < numOctaves; octave++)
     {
-        result += amplitude * Perlin2D(x * frequency, y * frequency, wrap, perlinTable);
+        result += amplitude * Perlin2D(x * frequency, y * frequency, perlinTable);
 
         amplitude *= 0.5f;
         frequency *= 2.0f;

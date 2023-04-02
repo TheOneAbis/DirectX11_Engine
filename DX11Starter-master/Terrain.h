@@ -6,11 +6,9 @@ class Terrain : public Mesh
 {
 public:
 	
-	Terrain(unsigned int rows, unsigned int columns, float spaceBetween,
+	Terrain(unsigned int rows, unsigned int columns,
 		Microsoft::WRL::ComPtr<ID3D11Device> device,
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
-
-	void Draw() override;
 
 	DirectX::XMINT2 resolution;
 

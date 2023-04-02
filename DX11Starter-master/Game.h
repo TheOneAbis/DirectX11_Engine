@@ -54,5 +54,8 @@ private:
 	// Skybox shaders
 	std::shared_ptr<SimpleVertexShader> skyVS;
 	std::shared_ptr<SimplePixelShader> skyPS;
+
+	// Terrain shaders
+	std::shared_ptr<SimpleVertexShader> terrainVS;
 };
 

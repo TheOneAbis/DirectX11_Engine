@@ -26,8 +26,7 @@ protected:
 	void CreateBuffers(Vertex* vertices,
 		unsigned int numVerts,
 		unsigned int* indices,
-		Microsoft::WRL::ComPtr<ID3D11Device> device,
-		bool dynamic);
+		Microsoft::WRL::ComPtr<ID3D11Device> device);
 
 public:
 
