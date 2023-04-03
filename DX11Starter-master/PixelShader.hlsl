@@ -56,7 +56,8 @@ float4 main(VertexToPixel input) : SV_TARGET
     }
 
     // Sample the surface texture for the initial pixel color (scale texture if a scale was specified)
-    float3 surfaceColor = ((textureBitMask & 1) == 1 ? AlbedoMap.Sample(BasicSampler, input.uv * textureScale).rgb : 1) * colorTint.xyz;
+    // If using texture for surface, un-correct the color w/ gamma value
+    float3 surfaceColor = ((textureBitMask & 1) == 1 ? pow(AlbedoMap.Sample(BasicSampler, input.uv * textureScale).rgb, 2.2f) : 1) * colorTint.xyz;
     float3 totalLightColor = ambientColor * surfaceColor;
     
     bool attenuate = false;
@@ -94,5 +95,6 @@ float4 main(VertexToPixel input) : SV_TARGET
         totalLightColor += lightCol;
     }
     
-    return float4(totalLightColor, 1);
+    // correct color w/ gamma and return final color
+    return float4(pow(totalLightColor, 1 / 2.2f), 1);
 }
