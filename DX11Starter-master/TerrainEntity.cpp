@@ -10,41 +10,44 @@ TerrainEntity::TerrainEntity(std::shared_ptr<Terrain> mesh, std::shared_ptr<Mate
 	this->noiseDensity = noiseDensity;
 	this->noiseOffset = 0.0f;
 
-	// Create array (permutation table) and shuffle it
-	for (int i = 0; i < 256; i++)
-		permutation[i] = i;
+	perlin = PerlinObject(256);
 
-	// Shuffle the array
-	for (int e = 256 - 1; e > 0; e--) {
-		const int index = e - 1 == 0 ? 0 : rand() % (e - 1);
-		const int temp = permutation[e];
+	//// Create array (permutation table) and shuffle it
+	//for (int i = 0; i < 256; i++)
+	//	permutation[i] = i;
 
-		permutation[e] = permutation[index];
-		permutation[index] = temp;
-	}
+	//// Shuffle the array
+	//for (int e = 256 - 1; e > 0; e--) {
+	//	const int index = e - 1 == 0 ? 0 : rand() % (e - 1);
+	//	const int temp = permutation[e];
 
-	// Duplicate the array
-	for (int i = 256; i < 256 * 2; i++)
-		permutation[i] = permutation[i - 256];
-	for (int i = 0; i < 512; i++)
-	{
-		if (permutation[i] == 0) cout << permutation[i] << endl;
-	}
+	//	permutation[e] = permutation[index];
+	//	permutation[index] = temp;
+	//}
+
+	//// Duplicate the array
+	//for (int i = 256; i < 256 * 2; i++)
+	//	permutation[i] = permutation[i - 256];
+
+	for (Vertex& v : mesh->vertices)
+		v.Position.y += perlin.FractalBrownianMotion(v.Position.x * noiseDensity.x, v.Position.z * noiseDensity.y, 2);
+	mesh->UpdateVBO();
 }
 
 void TerrainEntity::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
-	noiseOffset += deltaTime * 200.0f;
+	//noiseOffset += deltaTime * 200.0f;
 }
 
-void TerrainEntity::Draw(
-	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, shared_ptr<Camera> camPtr)
-{
-	// Set permutation table and noise offsets in terrain vertex shader
-	GetMaterial()->GetVS()->SetData("permutation", permutation, sizeof(int) * 512); // not working idk why
-	GetMaterial()->GetVS()->SetFloat("noiseOffset", noiseOffset);
-	GetMaterial()->GetVS()->SetFloat2("noiseDensity", noiseDensity);
-
-	// Do the rest of the normal drawing stuff
-	GameEntity::Draw(context, camPtr);
-}
+//void TerrainEntity::Draw(
+//	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, shared_ptr<Camera> camPtr)
+//{
+//	// Set permutation table and noise offsets in terrain vertex shader
+//	GetMaterial()->GetVS()->SetData("permutation", permutation, sizeof(int) * 512); // not working idk why
+//	GetMaterial()->GetVS()->SetFloat("noiseOffset", noiseOffset);
+//	GetMaterial()->GetPS()->SetFloat2("uvOffset", XMFLOAT2(noiseOffset, 0));
+//	GetMaterial()->GetVS()->SetFloat2("noiseDensity", noiseDensity);
+//
+//	// Do the rest of the normal drawing stuff
+//	GameEntity::Draw(context, camPtr);
+//}

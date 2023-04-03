@@ -51,6 +51,7 @@ void Material::PrepareMaterial()
 // So that if the next material isn't using textures but the same shader, it will not end up using the texture from this material
 void Material::ResetTextureData()
 {
+	ps->SetFloat2("uvOffset", XMFLOAT2(0, 0));
 	for (auto& t : textureSRVs)
 		ps->SetShaderResourceView(t.first.c_str(), 0);
 

@@ -9,6 +9,7 @@ cbuffer ExternalData : register(b0)
 	float3 cameraPosition;
 
     int textureBitMask;
+    float2 uvOffset;
     
     Light lights[MAX_LIGHT_COUNT];
 }
@@ -33,6 +34,8 @@ float4 main(VertexToPixel input) : SV_TARGET
     // Renormalize normals and tangents
     input.normal = normalize(input.normal);
     input.tangent = normalize(input.tangent);
+    // scroll uv
+    input.uv += uvOffset;
 
     // Calculate vector from surface to camera
     float3 viewVector = normalize(cameraPosition - input.worldPosition);

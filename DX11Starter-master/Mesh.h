@@ -26,7 +26,7 @@ protected:
 	void CreateBuffers(Vertex* vertices,
 		unsigned int numVerts,
 		unsigned int* indices,
-		Microsoft::WRL::ComPtr<ID3D11Device> device);
+		Microsoft::WRL::ComPtr<ID3D11Device> device, bool dynamic = false);
 
 public:
 
@@ -39,11 +39,11 @@ public:
 		unsigned int* indices, 
 		unsigned int numIndices, 
 		Microsoft::WRL::ComPtr<ID3D11Device> device,
-		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, bool dynamic = false);
 
 	Mesh(const wchar_t* fileName,
 		Microsoft::WRL::ComPtr<ID3D11Device> device,
-		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, bool dynamic = false);
 
 	~Mesh();
 

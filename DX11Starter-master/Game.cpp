@@ -196,7 +196,7 @@ void Game::CreateGeometry()
 	mats.push_back(std::make_shared<Material>(white, 0.0f, vertexShader, pixelShader));
 	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 0, 1, 1), 0.0f, vertexShader, pixelShader));
 	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.0f, vertexShader, pixelShader));
-	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.0f, terrainVS, pixelShader));
+	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.0f, vertexShader, pixelShader));
 	// weird material
 	mats.push_back(std::make_shared<Material>(white, 0.1f, vertexShader, customPS));
 
@@ -235,7 +235,7 @@ void Game::CreateGeometry()
 
 	gameObjects.push_back(new GameEntity(meshes[3], mats[0]));
 	gameObjects.push_back(new CoolObject(meshes[0], mats[4]));
-	gameObjects.push_back(new TerrainEntity(std::make_shared<Terrain>(500, 500, device, context), mats[3], XMFLOAT2(50.0f, 50.0f))); // cool terrain entity
+	gameObjects.push_back(new TerrainEntity(std::make_shared<Terrain>(500, 500, device, context), mats[3], XMFLOAT2(2.5f, 2.5f))); // cool terrain entity
 	
 	// Call Init on all game entities in the world
 	for (GameEntity* obj : gameObjects)
@@ -253,9 +253,9 @@ void Game::CreateGeometry()
 	gameObjects[6]->GetTransform()->SetPosition(8, 0, 0);
 	gameObjects[7]->GetTransform()->SetPosition(0, 4, 2);
 	// ground texture
-	gameObjects[8]->GetTransform()->MoveAbsolute(-10, -2, -10);
-	gameObjects[8]->GetTransform()->SetScale(0.05f, 0.05f, 0.05f);
-	gameObjects[8]->SetTextureUniformScale(0.01f);
+	gameObjects[8]->GetTransform()->MoveAbsolute(-250, -2, -250);
+	gameObjects[8]->GetTransform()->SetScale(1.0f, 10.0f,1.0f);
+	gameObjects[8]->SetTextureUniformScale(0.1f);
 
 	// Create the skybox
 	skybox = std::make_shared<Skybox>(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/cube.obj").c_str(), device, context), samplerState, device, context, skyVS, skyPS,

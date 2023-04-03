@@ -10,7 +10,14 @@ public:
 		Microsoft::WRL::ComPtr<ID3D11Device> device,
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
+	void Draw() override;
+
+	void UpdateVBO();
+
 	DirectX::XMINT2 resolution;
 
 private:
+
+	bool updateVBO;
+
 };

@@ -8,6 +8,8 @@ Terrain::Terrain(unsigned int rows, unsigned int columns,
 	Microsoft::WRL::ComPtr<ID3D11Device> device,
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
 {
+	updateVBO = false;
+
 	resolution = XMINT2(columns, rows);
 	vector<Vertex> vertices;
 	vector<unsigned int> indices;
@@ -47,15 +49,27 @@ Terrain::Terrain(unsigned int rows, unsigned int columns,
 	this->context = context;
 	this->vertices = vertices;
 	this->indexCount = (unsigned int)indices.size();
-	CreateBuffers(&vertices[0], (unsigned int)vertices.size(), &indices[0], device);
+	CreateBuffers(&vertices[0], (unsigned int)vertices.size(), &indices[0], device, true);
 }
 
-//void Terrain::Draw()
-//{
-//	D3D11_MAPPED_SUBRESOURCE vData = {}; // will hold a POINTER to vertex buffer in GPU memory
-//	context->Map(GetVertexBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &vData); // lock vertex buffer and get us pointer to it
-//	memcpy(vData.pData, &vertices[0], sizeof(Vertex) * vertices.size()); // copy from vertices to GPU
-//	context->Unmap(GetVertexBuffer().Get(), 0); // Unlock vertex buffer w/ new data
-//
-//	Mesh::Draw(); // call the parent's draw method to draw the terrain on the screen
-//}
+// Call this on the terrain object if you want its vertices updated next frame. 
+// Call this if you have altered any of its vertices on CPU.
+void Terrain::UpdateVBO()
+{
+	updateVBO = true;
+}
+
+void Terrain::Draw()
+{
+	// only update VBO if it needs to be (to reduce locking/unlocking frequency)
+	if (updateVBO)
+	{
+		updateVBO = false;
+		D3D11_MAPPED_SUBRESOURCE vData = {}; // will hold a POINTER to vertex buffer in GPU memory
+		context->Map(GetVertexBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &vData); // lock vertex buffer and get us pointer to it
+		memcpy(vData.pData, &vertices[0], sizeof(Vertex) * vertices.size()); // copy from vertices to GPU
+		context->Unmap(GetVertexBuffer().Get(), 0); // Unlock vertex buffer w/ new data
+	}
+
+	Mesh::Draw(); // call the parent's draw method to draw the terrain on the screen
+}
