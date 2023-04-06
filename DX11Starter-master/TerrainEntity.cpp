@@ -29,8 +29,16 @@ TerrainEntity::TerrainEntity(std::shared_ptr<Terrain> mesh, std::shared_ptr<Mate
 	//for (int i = 256; i < 256 * 2; i++)
 	//	permutation[i] = permutation[i - 256];
 
+	// Calculate perlin noise
 	for (Vertex& v : mesh->vertices)
 		v.Position.y += perlin.FractalBrownianMotion(v.Position.x * noiseDensity.x, v.Position.z * noiseDensity.y, 2);
+
+	// Calculate new normals
+	for (int i = 0; i < mesh->vertices.size(); i++)
+	{
+
+	}
+
 	mesh->UpdateVBO();
 }
 

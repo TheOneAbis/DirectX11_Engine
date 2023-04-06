@@ -140,6 +140,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Collider.cpp" />
     <ClCompile Include="CoolObject.cpp" />
     <ClCompile Include="DXCore.cpp" />
     <ClCompile Include="Game.cpp" />
@@ -165,6 +166,7 @@
   <ItemGroup>
     <ClInclude Include="BufferStructs.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Collider.h" />
     <ClInclude Include="CoolObject.h" />
     <ClInclude Include="DXCore.h" />
     <ClInclude Include="Game.h" />
