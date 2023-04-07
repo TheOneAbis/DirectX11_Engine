@@ -1,8 +1,10 @@
 #pragma once
 #include <DirectXMath.h>
+#include "Component.h"
 
-struct Rigidbody
+class Rigidbody : public Component
 {
+public:
 	DirectX::XMFLOAT3 gravity;
 	float friction;
 	float linearDamping;

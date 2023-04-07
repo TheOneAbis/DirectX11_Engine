@@ -10,7 +10,6 @@ Collider::Collider()
 {
 	this->type = BOX_COLLIDER;
 	this->isTrigger = false;
-	this->gameObject = 0; // to be set externally
 	this->radius = 1;
 	this->bounds = XMFLOAT3(1, 1, 1);
 	this->localP1 = XMFLOAT3(0, -1, 0);

@@ -10,11 +10,10 @@ enum ColliderType
 	CAPSULE_COLLIDER
 };
 
-class Collider
+class Collider : public Component
 {
 public:
 	
-	std::shared_ptr<GameEntity> gameObject;
 	bool isTrigger;
 	float radius;
 	DirectX::XMFLOAT3 localPosition;

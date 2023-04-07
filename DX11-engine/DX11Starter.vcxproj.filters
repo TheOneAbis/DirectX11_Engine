@@ -27,6 +27,12 @@
     <Filter Include="Source Files\Game Entity Subclass Sources">
       <UniqueIdentifier>{ad0f59e1-8ec2-41a0-8ff4-0f39f886c05f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Component Headers">
+      <UniqueIdentifier>{0d95f844-db0d-45fe-8070-b305a90ffeea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Component Sources">
+      <UniqueIdentifier>{d1274280-73f1-43e6-83d0-4210d07660f0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DXCore.cpp">
@@ -96,10 +102,10 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Collider.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Component Sources</Filter>
     </ClCompile>
     <ClCompile Include="Rigidbody.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Component Sources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -182,10 +188,13 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Collider.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Component Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Component.h">
+      <Filter>Header Files\Component Headers</Filter>
     </ClInclude>
     <ClInclude Include="Rigidbody.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Component Headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

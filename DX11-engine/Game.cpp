@@ -234,6 +234,7 @@ void Game::CreateGeometry()
 	gameObjects.push_back(new GameEntity(meshes[2], mats[2]));
 
 	gameObjects.push_back(new GameEntity(meshes[3], mats[0]));
+
 	gameObjects.push_back(new CoolObject(meshes[0], mats[4]));
 	gameObjects.push_back(new TerrainEntity(std::make_shared<Terrain>(500, 500, device, context), mats[3], XMFLOAT2(2.5f, 2.5f))); // cool terrain entity
 	

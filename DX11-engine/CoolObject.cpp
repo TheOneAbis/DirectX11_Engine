@@ -9,12 +9,17 @@ CoolObject::CoolObject() : GameEntity()
 {
 	totalTime = 0.0f;
 	mousePos = { 0.0f, 0.0f };
+	body = Rigidbody();
+	body.gravity = { 0, -9.8f, 0 };
+	this->AddComponent<Rigidbody>(body);
 };
 CoolObject::CoolObject(shared_ptr<Mesh> mesh, shared_ptr<Material> material)
 	: GameEntity(mesh, material) 
 {
 	totalTime = 0.0f;
 	mousePos = { 0.0f, 0.0f };
+	body.gravity = { 0, -9.8f, 0 };
+	this->AddComponent<Rigidbody>(body);
 };
 
 void CoolObject::Init()
@@ -62,9 +67,4 @@ void CoolObject::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, std::
 
 	// reset the SRV's and samplers for the next time so shader is fresh for a different material
 	GetMaterial()->ResetTextureData();
-}
-
-const Rigidbody& CoolObject::GetRigidbody()
-{
-	return this->rigidbody;
 }
