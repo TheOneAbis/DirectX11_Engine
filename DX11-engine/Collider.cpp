@@ -34,7 +34,7 @@ Collider::Collider(shared_ptr<GameEntity> gameObject, ColliderType type, bool is
 	{
 		case BOX_COLLIDER:
 			// Set the collision test function to run
-			this->collisionFunc = [](const Collider* other, const Collider* current = this)
+			this->collisionFunc = [](const Collider* other, const Collider* current)
 			{
 				return false;
 			};
@@ -42,7 +42,7 @@ Collider::Collider(shared_ptr<GameEntity> gameObject, ColliderType type, bool is
 
 		case SPHERE_COLLIDER:
 			// Set the collision test function to run
-			this->collisionFunc = [](const Collider* other, const Collider* current = this)
+			this->collisionFunc = [](const Collider* other, const Collider* current)
 			{
 				float dist2 = -1;
 				XMStoreFloat(&dist2, XMVector3LengthSq(XMVectorSubtract(
@@ -56,7 +56,7 @@ Collider::Collider(shared_ptr<GameEntity> gameObject, ColliderType type, bool is
 
 		case CAPSULE_COLLIDER:
 			// Set the collision test function to run
-			this->collisionFunc = [](const Collider* other, const Collider* current = this)
+			this->collisionFunc = [](const Collider* other, const Collider* current)
 			{
 				return false;
 			};

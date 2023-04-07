@@ -16,6 +16,10 @@ private:
 public:
 
 	bool UpdateEnabled;
+	bool physicsEnabled;
+
+	// Physics vars
+	DirectX::XMFLOAT3 gravity;
 
 	GameEntity();
 	GameEntity(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material);

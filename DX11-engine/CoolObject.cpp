@@ -63,3 +63,8 @@ void CoolObject::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, std::
 	// reset the SRV's and samplers for the next time so shader is fresh for a different material
 	GetMaterial()->ResetTextureData();
 }
+
+const Rigidbody& CoolObject::GetRigidbody()
+{
+	return this->rigidbody;
+}

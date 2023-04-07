@@ -17,11 +17,13 @@ private:
 
 public:
 
+	// Create a Perlin Noise object with a predetermined permutation table (wrap is table size)
+	PerlinObject(int* permutation, int wrap);
+
 	/// <summary>
 	/// Create a perlin object that contains perlin noise generation
 	/// </summary>
 	/// <param name="wrapValue">The maximum x and y value before the noise wraps back to the beginning</param>
-	PerlinObject(int wrapValue);
 	PerlinObject();
 	PerlinObject& operator=(const PerlinObject& other);
 	~PerlinObject();

@@ -117,27 +117,17 @@ PerlinObject::PerlinObject()
 		perlinTable[i] = perlinTable[i - wrap];
 }
 
-PerlinObject::PerlinObject(int wrapValue)
+PerlinObject::PerlinObject(int* permutation, int wrap)
 {
-	this->wrap = wrapValue;
+	this->wrap = wrap;
 
-	// Create array (permutation table) and shuffle it
+	// Copy array and duplicate it
 	perlinTable = new int[wrap * 2];
 	for (int i = 0; i < wrap; i++)
-		perlinTable[i] = i;
-
-	// Shuffle the array
-	for (int e = wrap - 1; e > 0; e--) {
-		const int index = e - 1 == 0 ? 0 : rand() % (e - 1);
-		const int temp = perlinTable[e];
-
-		perlinTable[e] = perlinTable[index];
-		perlinTable[index] = temp;
+	{
+		perlinTable[i] = permutation[i];
+		perlinTable[i + wrap] = permutation[i];
 	}
-
-	// Duplicate the array
-	for (int i = wrap; i < wrap * 2; i++)
-		perlinTable[i] = perlinTable[i - wrap];
 }
 
 PerlinObject& PerlinObject::operator=(const PerlinObject& other)

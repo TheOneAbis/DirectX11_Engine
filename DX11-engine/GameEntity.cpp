@@ -9,6 +9,8 @@ GameEntity::GameEntity()
 	this->material = nullptr;
 	textureScale = 1;
 	UpdateEnabled = false;
+	physicsEnabled = false;
+	gravity = { 0, -9.8f, 0 };
 }
 
 GameEntity::GameEntity(shared_ptr<Mesh> mesh, shared_ptr<Material> material)
@@ -17,6 +19,8 @@ GameEntity::GameEntity(shared_ptr<Mesh> mesh, shared_ptr<Material> material)
 	this->material = material;
 	textureScale = 1;
 	UpdateEnabled = false;
+	physicsEnabled = false;
+	gravity = { 0, -9.8f, 0 };
 }
 
 shared_ptr<Mesh> GameEntity::GetMesh()
