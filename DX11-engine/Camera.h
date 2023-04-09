@@ -13,10 +13,15 @@ class Camera
 {
 public:
 
+	// Camera's Field of View.
 	float fov;
+	// Camera's near and far clip plane depth values.
 	float nearClip, farClip;
 	float moveSpeed;
 	float sensitivity;
+	// The camera's view width (x) and height (y).
+	DirectX::XMFLOAT2 viewDimensions;
+	CamType camType;
 
 	Camera(CamType camType = Perspective,
 		float viewWidth = 1280.0f,
@@ -28,6 +33,8 @@ public:
 		DirectX::XMFLOAT3 rotation = DirectX::XMFLOAT3(0, 0, 0), 
 		float movementSpeed = 2.0f, 
 		float mouseSens = 0.5f);
+
+	Camera(Camera& other);
 
 	void Update(float dt);
 
@@ -41,5 +48,4 @@ private:
 
 	Transform transform;
 	DirectX::XMFLOAT4X4 view, projection;
-	CamType camType;
 };

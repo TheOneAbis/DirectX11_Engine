@@ -170,7 +170,7 @@ void Transform::UpdateLocalAxes()
 {
 	// Create the rotation quat
 	XMVECTOR rotQuat = XMQuaternionRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
-
+	
 	// Rotate local right
 	XMStoreFloat3(&right, XMVector3Rotate(XMLoadFloat3(&WorldRight),
 		rotQuat));

@@ -107,6 +107,12 @@
     <ClCompile Include="Rigidbody.cpp">
       <Filter>Source Files\Component Sources</Filter>
     </ClCompile>
+    <ClCompile Include="MagicMirrorManager.cpp">
+      <Filter>Source Files\Game Entity Subclass Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="MagicMirror.cpp">
+      <Filter>Source Files\Game Entity Subclass Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DXCore.h">
@@ -195,6 +201,12 @@
     </ClInclude>
     <ClInclude Include="Rigidbody.h">
       <Filter>Header Files\Component Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="MagicMirrorManager.h">
+      <Filter>Header Files\Game Entity Subclass Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="MagicMirror.h">
+      <Filter>Header Files\Game Entity Subclass Headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

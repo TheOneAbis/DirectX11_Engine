@@ -19,8 +19,26 @@ Camera::Camera(CamType camType,
 	this->fov = fov;
 	this->nearClip = nearClip;
 	this->farClip = farClip;
+	this->viewDimensions = { viewWidth, viewHeight };
 
 	UpdateProjectionMatrix(viewWidth, viewHeight);
+	UpdateViewMatrix();
+}
+
+Camera::Camera(Camera& other)
+{
+	this->camType = other.camType;
+	transform = other.transform;
+	transform.SetPosition(other.transform.GetPosition());
+	transform.SetRotation(other.transform.GetPitchYawRoll());
+	moveSpeed = other.moveSpeed;
+	sensitivity = other.sensitivity;
+	this->fov = other.fov;
+	this->nearClip = other.nearClip;
+	this->farClip = other.farClip;
+	this->viewDimensions = other.viewDimensions;
+
+	UpdateProjectionMatrix(viewDimensions.x, viewDimensions.y);
 	UpdateViewMatrix();
 }
 
