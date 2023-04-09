@@ -33,6 +33,9 @@
     <Filter Include="Source Files\Component Sources">
       <UniqueIdentifier>{d1274280-73f1-43e6-83d0-4210d07660f0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\MirrorShaders">
+      <UniqueIdentifier>{974fbaa0-71eb-4b70-848c-9498ba77a819}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DXCore.cpp">
@@ -227,6 +230,15 @@
     </FxCompile>
     <FxCompile Include="VS_Terrain.hlsl">
       <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="VS_MagicMirror.hlsl">
+      <Filter>Shaders\MirrorShaders</Filter>
+    </FxCompile>
+    <FxCompile Include="PS_MagicMirror.hlsl">
+      <Filter>Shaders\MirrorShaders</Filter>
+    </FxCompile>
+    <FxCompile Include="PS_MagicMirrorView.hlsl">
+      <Filter>Shaders\MirrorShaders</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
