@@ -36,6 +36,15 @@ shared_ptr<SimplePixelShader> Material::GetPS()
 	return ps;
 }
 
+void Material::SetVS(std::shared_ptr<SimpleVertexShader> newVS)
+{
+	vs = newVS;
+}
+void Material::SetPS(std::shared_ptr<SimplePixelShader> newPS)
+{
+	ps = newPS;
+}
+
 void Material::PrepareMaterial()
 {
 	ps->SetInt("textureBitMask", textureBitMask);

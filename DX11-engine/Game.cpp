@@ -78,24 +78,6 @@ void Game::Init()
 	ImGui_ImplWin32_Init(hWnd);
 	ImGui_ImplDX11_Init(device.Get(), context.Get());
 	ImGui::StyleColorsDark();
-	
-	// Helper methods for loading shaders, creating some basic
-	// geometry to draw and some simple camera matrices.
-	//  - You'll be expanding and/or replacing these later
-	LoadShaders();
-
-	CreateGeometry();
-	
-	// Set initial graphics API state
-	//  - These settings persist until we change them
-	//  - Some of these, like the primitive topology & input layout, probably won't change
-	//  - Others, like setting shaders, will need to be moved elsewhere later
-	{
-		// Tell the input assembler (IA) stage of the pipeline what kind of
-		// geometric primitives (points, lines or triangles) we want to draw.  
-		// Essentially: "What kind of shape should the GPU draw with our vertices?"
-		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	}
 
 	// Init the cameras
 	cams.push_back(std::make_shared<Camera>(Perspective, (float)windowWidth, (float)windowHeight, 80.0f, 0.1f, 1000.0f, XMFLOAT3(0, 0, -3.0f)));
@@ -107,7 +89,7 @@ void Game::Init()
 	// NOTE: got rid of the other 2 directional lights; makes sense to only have one for the sunlight
 	Light newLight = {};
 	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
-	newLight.Direction = XMFLOAT3(0.0f, -0.3f,-1.0f);
+	newLight.Direction = XMFLOAT3(0.0f, -0.3f, -1.0f);
 	newLight.Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
 	newLight.Intensity = 3.0f;
 	lights.push_back(newLight);
@@ -129,6 +111,24 @@ void Game::Init()
 	lights.push_back(newLight);
 
 	activeCam = cams[camIndex];
+	
+	// Helper methods for loading shaders, creating some basic
+	// geometry to draw and some simple camera matrices.
+	//  - You'll be expanding and/or replacing these later
+	LoadShaders();
+
+	CreateGeometry();
+	
+	// Set initial graphics API state
+	//  - These settings persist until we change them
+	//  - Some of these, like the primitive topology & input layout, probably won't change
+	//  - Others, like setting shaders, will need to be moved elsewhere later
+	{
+		// Tell the input assembler (IA) stage of the pipeline what kind of
+		// geometric primitives (points, lines or triangles) we want to draw.  
+		// Essentially: "What kind of shape should the GPU draw with our vertices?"
+		context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	}
 }
 
 // --------------------------------------------------------
@@ -149,8 +149,6 @@ void Game::LoadShaders()
 
 	skyVS = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"VertexShader_Skybox.cso").c_str());
 	skyPS = std::make_shared<SimplePixelShader>(device, context, FixPath(L"PixelShader_Skybox.cso").c_str());
-
-	terrainVS = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"VS_Terrain.cso").c_str());
 }
 
 
@@ -238,7 +236,10 @@ void Game::CreateGeometry()
 	gameObjects.push_back(new CoolObject(meshes[0], mats[4]));
 	gameObjects.push_back(new TerrainEntity(std::make_shared<Terrain>(500, 500, device, context), mats[3], XMFLOAT2(2.5f, 2.5f))); // cool terrain entity
 	
-	// Call Init on all game entities in the world
+	// Create the mirror manager (this creates the mirrors and sets up all the backend)
+	mirrorManager = std::make_shared<MagicMirrorManager>(activeCam, device, context);
+
+	// Call Init on all game entities in the world (if they have one)
 	for (GameEntity* obj : gameObjects)
 		obj->Init();
 
@@ -298,6 +299,9 @@ void Game::Update(float deltaTime, float totalTime)
 
 	activeCam->Update(deltaTime);
 	activeCam->UpdateViewMatrix();
+
+	// Update mirror view matrices & cams
+	mirrorManager->Update(deltaTime, context, activeCam);
 
 	// Update UI
 	this->UpdateUI(deltaTime);
@@ -438,6 +442,8 @@ void Game::Draw(float deltaTime, float totalTime)
 		
 		gameObject->Draw(context, activeCam);
 	}
+	// Draw mirrors & update mirror maps, draw all objects through mirrors
+	mirrorManager->Draw(context, activeCam, gameObjects);
 
 	// Render the skybox
 	skybox->Draw(context, activeCam);

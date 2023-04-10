@@ -38,7 +38,7 @@ private:
 	//  - More info here: https://github.com/Microsoft/DirectXTK/wiki/ComPtr
 
 	std::vector<GameEntity*> gameObjects; // pointers for polymorphic behavior
-	GameEntity uniqueObj;
+	std::shared_ptr<MagicMirrorManager> mirrorManager;
 	std::vector<std::shared_ptr<Mesh>> meshes;
 	std::shared_ptr<Skybox> skybox;
 	std::vector<std::shared_ptr<Camera>> cams;
@@ -54,8 +54,5 @@ private:
 	// Skybox shaders
 	std::shared_ptr<SimpleVertexShader> skyVS;
 	std::shared_ptr<SimplePixelShader> skyPS;
-
-	// Terrain shaders
-	std::shared_ptr<SimpleVertexShader> terrainVS;
 };
 

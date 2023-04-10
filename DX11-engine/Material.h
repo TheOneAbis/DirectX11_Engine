@@ -18,6 +18,9 @@ public:
 	std::shared_ptr<SimpleVertexShader> GetVS();
 	std::shared_ptr<SimplePixelShader> GetPS();
 
+	void SetVS(std::shared_ptr<SimpleVertexShader> newVS);
+	void SetPS(std::shared_ptr<SimplePixelShader> newPS);
+
 	void PrepareMaterial();
 	void ResetTextureData();
 
