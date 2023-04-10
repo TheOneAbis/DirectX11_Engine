@@ -13,6 +13,8 @@ public:
 		Microsoft::WRL::ComPtr<ID3D11Device> device,
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
 
+	void Init() override;
+
 	void Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, std::shared_ptr<Camera> camPtr);
 	
 	void Draw(

@@ -242,6 +242,7 @@ void Game::CreateGeometry()
 	// Call Init on all game entities in the world (if they have one)
 	for (GameEntity* obj : gameObjects)
 		obj->Init();
+	mirrorManager->Init();
 
 	gameObjects[0]->GetTransform()->SetPosition(-8, 0, 0);
 

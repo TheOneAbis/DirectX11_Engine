@@ -19,6 +19,9 @@ Mesh::Mesh(Vertex* vertices,
 	// Store context ptr and index count
 	this->context = context;
 	this->indexCount = numIndices;
+	
+	for (int i = 0; i < numVerts; i++)
+		this->vertices.push_back(vertices[i]);
 
 	CreateBuffers(vertices, numVerts, indices, device, dynamic);
 }
