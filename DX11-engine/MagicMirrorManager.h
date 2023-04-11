@@ -2,6 +2,7 @@
 
 #include <memory>
 #include "MagicMirror.h"
+#include "Lights.h"
 
 class MagicMirrorManager : public GameEntity
 {
@@ -19,7 +20,8 @@ public:
 	
 	void Draw(
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
-		std::shared_ptr<Camera> camPtr, std::vector<GameEntity*> gameObjects);
+		std::shared_ptr<Camera> camPtr, std::vector<GameEntity*> gameObjects, 
+		std::vector<Light> lights, DirectX::XMFLOAT3 ambientColor);
 
 	MagicMirror* GetMirror(int index);
 

@@ -31,6 +31,7 @@ public:
 	void SetMaterial(std::shared_ptr<Material> material);
 	Transform* GetTransform();
 	void SetTextureUniformScale(float scale);
+	float GetTextureUniformScale();
 
 	virtual void Init();
 	virtual void Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);

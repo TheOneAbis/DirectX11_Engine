@@ -44,6 +44,11 @@ void GameEntity::SetTextureUniformScale(float scale)
 	textureScale = scale;
 }
 
+float GameEntity::GetTextureUniformScale()
+{
+	return textureScale;
+}
+
 // Init() is meant to be overriden bu subclasses
 void GameEntity::Init() {}
 

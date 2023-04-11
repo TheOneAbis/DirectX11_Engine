@@ -48,6 +48,7 @@ void Material::SetPS(std::shared_ptr<SimplePixelShader> newPS)
 void Material::PrepareMaterial()
 {
 	ps->SetInt("textureBitMask", textureBitMask);
+
 	// Bind the texture SRVs
 	for (auto& t : textureSRVs) 
 		ps->SetShaderResourceView(t.first.c_str(), t.second);

@@ -34,7 +34,7 @@ MagicMirrorManager::MagicMirrorManager(shared_ptr<Camera> playerCam,
 	mirrorTextDesc.Height               = playerCam->viewDimensions.y;
 	mirrorTextDesc.MipLevels            = 1;
 	mirrorTextDesc.ArraySize            = 1;
-	mirrorTextDesc.Format               = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	mirrorTextDesc.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
 	mirrorTextDesc.Usage                = D3D11_USAGE_DEFAULT;
 	mirrorTextDesc.BindFlags            = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	mirrorTextDesc.CPUAccessFlags       = 0;
@@ -59,8 +59,8 @@ void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11De
 	// Set mirror 2 cam in mirror 2 space, which is player cam in mirror 1 space but negated
 	XMVECTOR mirror0PosVec = XMLoadFloat3(&mirrors[0].GetTransform()->GetPosition());
 	XMVECTOR mirror1PosVec = XMLoadFloat3(&mirrors[1].GetTransform()->GetPosition());
-	XMVECTOR mirrorCamPosOffset = XMVectorSubtract(mirror0PosVec,
-		XMLoadFloat3(&camPtr->GetTransform().GetPosition())); // cam -> mirror
+	XMVECTOR mirrorCamPosOffset = XMVectorMultiply(XMVectorSubtract(mirror0PosVec,
+		XMLoadFloat3(&camPtr->GetTransform().GetPosition())), XMVectorSet(1, -1, 1, 1)); // cam -> mirror
 
 	XMVECTOR mirrorCamPosWorld = XMVectorAdd(mirror1PosVec, mirrorCamPosOffset);
 	XMStoreFloat3(&mirrorCamPositions[1], mirrorCamPosWorld);
@@ -92,17 +92,17 @@ void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11De
 
 	// Set camera's near clip depth to farthest vertex in mirror mesh
 	XMFLOAT4X4 mirrorWorld = mirrors[1].GetTransform()->GetWorldMatrix();
-	XMVECTOR mirrorWorldZCol = XMVectorSet(mirrorWorld._31, mirrorWorld ._32, mirrorWorld ._33, mirrorWorld ._34);
+	//XMVECTOR mirrorWorldZCol = XMVectorSet(mirrorWorld._31, mirrorWorld ._32, mirrorWorld ._33, mirrorWorld ._34);
 
 	float newNear = camPtr->nearClip;
 	for (Vertex& v : mirrors[1].GetMesh()->vertices)
 	{
-		float z;
+		XMFLOAT4 posView;
 		XMVECTOR posVec = XMLoadFloat3(&v.Position);
-		XMStoreFloat(&z, XMVector3Dot(posVec, XMVector3Transform(mirrorWorldZCol, view)));
-		if (z > newNear) newNear = z;
+		XMStoreFloat4(&posView, XMVector3Transform(posVec, XMMatrixMultiply(view, XMLoadFloat4x4(&mirrorWorld))));
+		if (posView.z > newNear) newNear = posView.z;
 	}
-	std::cout << newNear << std::endl;
+	//std::cout << newNear << std::endl;
 	// Set this mirror's projection matrix w/ new near clip
 	XMStoreFloat4x4(&mirrorProjs[1], XMMatrixPerspectiveFovLH(
 		camPtr->fov * (3.14159f / 180.0f), 
@@ -112,7 +112,8 @@ void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11De
 
 void MagicMirrorManager::Draw(
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, 
-	shared_ptr<Camera> camPtr, vector<GameEntity*> gameObjects)
+	shared_ptr<Camera> camPtr, vector<GameEntity*> gameObjects, 
+	vector<Light> lights, XMFLOAT3 ambientColor)
 {
 	// Grab the original render targets for rebinding later
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> tempRender;
@@ -122,7 +123,7 @@ void MagicMirrorManager::Draw(
 	// Draw the mirrors (not to the viewport, but to the mirror texture)
 	const float black[4] = { 0, 0, 0, 1 };
 	context->ClearRenderTargetView(mirrorTarget.Get(), black);
-	context->OMSetRenderTargets(1, mirrorTarget.GetAddressOf(), 0);
+	context->OMSetRenderTargets(1, mirrorTarget.GetAddressOf(), tempDepth.Get()); // keep original DSV for setting the correct white pixels
 
 	for (MagicMirror& m : mirrors)
 		m.Draw(context, camPtr);
@@ -138,11 +139,16 @@ void MagicMirrorManager::Draw(
 		mat->SetPS(mirrorViewPS); // set to mirror pixel shader for drawing through mirror
 		Transform* trans = gameObj->GetTransform();
 
-		// Do any routine prep work for the material's shaders (i.e. loading stuff)
-		mat->PrepareMaterial();
-
 		std::shared_ptr<SimpleVertexShader> vs = mat->GetVS();
 		std::shared_ptr<SimplePixelShader> ps = mat->GetPS();
+
+		ps->SetData("lights",                         // name of the lights array in shader
+			&lights[0],                               // address of the data to set
+			sizeof(Light) * (int)lights.size());      // size of the data (whole struct) to set
+		ps->SetFloat3("ambientColor", ambientColor);
+
+		// Do any routine prep work for the material's shaders (i.e. loading stuff)
+		mat->PrepareMaterial();
 
 		vs->SetMatrix4x4("world", trans->GetWorldMatrix());
 		vs->SetMatrix4x4("worldInvTranspose", trans->GetWorldInverseTransposeMatrix());
@@ -154,7 +160,7 @@ void MagicMirrorManager::Draw(
 		ps->SetFloat4("colorTint", mat->GetColor());
 		ps->SetFloat("roughness", mat->GetRoughness());
 		ps->SetFloat3("cameraPosition", mirrorCamPositions[1]);
-		ps->SetFloat("textureScale", textureScale);
+		ps->SetFloat("textureScale", gameObj->GetTextureUniformScale());
 		ps->SetFloat2("mirrorMapDimensions", camPtr->viewDimensions);
 
 		// Set pixel shader mirror map
@@ -171,6 +177,7 @@ void MagicMirrorManager::Draw(
 
 		// reset the SRV's and samplers for the next time so shader is fresh for a different material
 		mat->ResetTextureData();
+		ps->SetShaderResourceView("MirrorMap", 0);
 		mat->SetPS(tempPS); // reset back to original pixel shader
 	}
 }

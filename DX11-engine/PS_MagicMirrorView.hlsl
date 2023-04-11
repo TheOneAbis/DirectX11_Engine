@@ -44,7 +44,7 @@ float4 main(VertexToPixel input) : SV_TARGET
     input.tangent = normalize(input.tangent);
     // scroll uv
     input.uv += uvOffset;
-
+    
     // Calculate vector from surface to camera
     float3 viewVector = normalize(cameraPosition - input.worldPosition);
 
@@ -65,7 +65,7 @@ float4 main(VertexToPixel input) : SV_TARGET
         // multiply normal map vector by the TBN matrix
         input.normal = mul(normalFromMap, TBN);
     }
-
+    
     // Sample the surface texture for the initial pixel color (scale texture if a scale was specified)
     // If using texture for surface, un-correct the color w/ gamma value
     float3 surfaceColor = ((textureBitMask & 1) == 1 ? pow(AlbedoMap.Sample(BasicSampler, input.uv * textureScale).rgb, 2.2f) : 1) * colorTint.xyz;

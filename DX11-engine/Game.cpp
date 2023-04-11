@@ -245,6 +245,7 @@ void Game::CreateGeometry()
 	mirrorManager->Init();
 
 	gameObjects[0]->GetTransform()->SetPosition(-8, 0, 0);
+	gameObjects[1]->GetTransform()->SetPosition(0, 6, 0);
 
 	// right column
 	gameObjects[2]->GetTransform()->SetPosition(4, -2, -2);
@@ -444,7 +445,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		gameObject->Draw(context, activeCam);
 	}
 	// Draw mirrors & update mirror maps, draw all objects through mirrors
-	mirrorManager->Draw(context, activeCam, gameObjects);
+	mirrorManager->Draw(context, activeCam, gameObjects, lights, ambientColor);
 
 	// Render the skybox
 	skybox->Draw(context, activeCam);
