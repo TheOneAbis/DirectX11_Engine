@@ -29,7 +29,11 @@ public:
 		const wchar_t* frontTexturePath,
 		const wchar_t* backTexturePath);
 
+	std::shared_ptr<SimplePixelShader> GetPS();
+	void SetPS(std::shared_ptr<SimplePixelShader> newPS);
+
 	void Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, std::shared_ptr<Camera> cam);
+	void Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, DirectX::XMFLOAT4X4 view, DirectX::XMFLOAT4X4 projection);
 
 private:
 

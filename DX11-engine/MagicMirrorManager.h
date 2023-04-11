@@ -3,6 +3,7 @@
 #include <memory>
 #include "MagicMirror.h"
 #include "Lights.h"
+#include "Skybox.h"
 
 class MagicMirrorManager : public GameEntity
 {
@@ -20,8 +21,11 @@ public:
 	
 	void Draw(
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
-		std::shared_ptr<Camera> camPtr, std::vector<GameEntity*> gameObjects, 
-		std::vector<Light> lights, DirectX::XMFLOAT3 ambientColor);
+		std::shared_ptr<Camera> camPtr, 
+		std::vector<GameEntity*> gameObjects, 
+		std::shared_ptr<Skybox> skybox,
+		std::vector<Light> lights, 
+		DirectX::XMFLOAT3 ambientColor);
 
 	MagicMirror* GetMirror(int index);
 
@@ -35,4 +39,5 @@ private:
 	DirectX::XMFLOAT4X4 mirrorProjs[2];
 	DirectX::XMFLOAT3 mirrorCamPositions[2];
 	std::shared_ptr<SimplePixelShader> mirrorViewPS;
+	std::shared_ptr<SimplePixelShader> skyboxMirrorPS;
 };

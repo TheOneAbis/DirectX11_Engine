@@ -13,6 +13,7 @@ MagicMirrorManager::MagicMirrorManager(shared_ptr<Camera> playerCam,
 	shared_ptr<SimpleVertexShader> mirrorVS = make_shared<SimpleVertexShader>(device, context, FixPath(L"VS_MagicMirror.cso").c_str());
 	shared_ptr<SimplePixelShader> mirrorPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_MagicMirror.cso").c_str());
 	mirrorViewPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_MagicMirrorView.cso").c_str());
+	skyboxMirrorPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_SkyboxMirror.cso").c_str());
 
 	shared_ptr<Material> mirrorMat = make_shared<Material>(XMFLOAT4(0, 0, 0, 0), 0, mirrorVS, mirrorPS);
 	Vertex verts[4] =
@@ -137,8 +138,11 @@ void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11De
 
 void MagicMirrorManager::Draw(
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, 
-	shared_ptr<Camera> camPtr, vector<GameEntity*> gameObjects, 
-	vector<Light> lights, XMFLOAT3 ambientColor)
+	shared_ptr<Camera> camPtr, 
+	vector<GameEntity*> gameObjects, 
+	std::shared_ptr<Skybox> skybox,
+	vector<Light> lights, 
+	XMFLOAT3 ambientColor)
 {
 	//const float bgColor[4] = { 0.2f, 0.2f, 0.2f, 1.0f }; // dark grey
 	//context->ClearRenderTargetView(mirrorTarget.Get(), bgColor);
@@ -212,6 +216,16 @@ void MagicMirrorManager::Draw(
 		ps->SetShaderResourceView("MirrorMap", 0);
 		mat->SetPS(tempPS); // reset back to original pixel shader
 	}
+
+	// Draw the skybox through the mirror
+	skyboxMirrorPS->SetFloat2("mirrorMapDimensions", camPtr->viewDimensions);
+	skyboxMirrorPS->SetShaderResourceView("MirrorMap", mirrorSRV);
+	shared_ptr<SimplePixelShader> skyTempPS = skybox->GetPS();
+	skybox->SetPS(skyboxMirrorPS);
+	skybox->Draw(context, mirrorViews[1], mirrorProjs[1]);
+	skybox->SetPS(skyTempPS);
+	skyboxMirrorPS->SetShaderResourceView("MirrorMap", 0);
+
 	// Set back to original DSV
 	context->OMSetRenderTargets(1, tempRender.GetAddressOf(), tempDepth.Get());
 }

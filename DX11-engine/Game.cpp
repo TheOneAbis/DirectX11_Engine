@@ -295,10 +295,6 @@ void Game::Update(float deltaTime, float totalTime)
 	for (GameEntity* gameObj : gameObjects)
 		gameObj->Update(deltaTime, context);
 
-	// Do funny transformations on game objects
-	gameObjects[0]->GetTransform()->Rotate(0, 0, deltaTime);
-	gameObjects[6]->GetTransform()->Rotate(0, 0, deltaTime / 3);
-
 	activeCam->Update(deltaTime);
 	activeCam->UpdateViewMatrix();
 
@@ -364,6 +360,19 @@ void Game::UpdateUI(float deltaTime)
 			ImGui::DragFloat3("Position: ", &gameObjects[i]->GetTransform()->GetPosition().x, 0.01f);
 			ImGui::DragFloat3("Rotation: ", &gameObjects[i]->GetTransform()->GetPitchYawRoll().x, 0.01f);
 			ImGui::DragFloat3("Scale: ", &gameObjects[i]->GetTransform()->GetScale().x, 0.01f);
+			ImGui::TreePop();
+		}
+		currentTreeSize++;
+	}
+
+	// mirrors
+	for (int i = 0; i < 2; i++)
+	{
+		if (ImGui::TreeNode((void*)(intptr_t)currentTreeSize, "Mirror %d", i))
+		{
+			ImGui::DragFloat3("Position: ", &mirrorManager->GetMirror(i)->GetTransform()->GetPosition().x, 0.01f);
+			ImGui::DragFloat3("Rotation: ", &mirrorManager->GetMirror(i)->GetTransform()->GetPitchYawRoll().x, 0.01f);
+			ImGui::DragFloat3("Scale: ", &mirrorManager->GetMirror(i)->GetTransform()->GetScale().x, 0.01f);
 			ImGui::TreePop();
 		}
 		currentTreeSize++;
@@ -449,7 +458,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	skybox->Draw(context, activeCam);
 
 	// Draw mirrors & update mirror maps, draw all objects through mirrors
-	mirrorManager->Draw(context, activeCam, gameObjects, lights, ambientColor);
+	mirrorManager->Draw(context, activeCam, gameObjects, skybox, lights, ambientColor);
 
 	// Render the UI
 	ImGui::Render();

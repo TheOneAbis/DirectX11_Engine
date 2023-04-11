@@ -96,6 +96,31 @@ void Skybox::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, std::shar
 	context->OMSetDepthStencilState(0, 0);
 }
 
+void Skybox::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, XMFLOAT4X4 view, XMFLOAT4X4 projection)
+{
+	context->RSSetState(rasterizerState.Get());
+	context->OMSetDepthStencilState(depthStencilState.Get(), 0);
+
+	// Set vertex shader w/ camera view and projection
+	skyVS->SetShader();
+	skyVS->SetMatrix4x4("view", view);
+	skyVS->SetMatrix4x4("projection", projection);
+	skyVS->CopyAllBufferData();
+
+	// Set pixel shader w/ sampler state and SRV
+	skyPS->SetShader();
+	skyPS->SetSamplerState("BasicSampler", sampler);
+	skyPS->SetShaderResourceView("SkyboxTexture", srv);
+	skyPS->CopyAllBufferData();
+
+	// Draw the skybox, setting vertex & index buffers
+	skyMesh->Draw();
+
+	// Reset render states to default
+	context->RSSetState(0);
+	context->OMSetDepthStencilState(0, 0);
+}
+
 // --------------------------------------------------------
 // Loads six individual textures (the six faces of a cube map), then
 // creates a blank cube map and copies each of the six textures to
@@ -176,4 +201,14 @@ Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Skybox::CreateCubemap(
 	device->CreateShaderResourceView(cubeMapTexture.Get(), &srvDesc, cubeSRV.GetAddressOf());
 	// Send back the SRV, which is what we need for our shaders
 	return cubeSRV;
+}
+
+std::shared_ptr<SimplePixelShader> Skybox::GetPS()
+{
+	return skyPS;
+}
+
+void Skybox::SetPS(std::shared_ptr<SimplePixelShader> newPS)
+{
+	skyPS = newPS;
 }

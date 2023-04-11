@@ -28,17 +28,17 @@ TerrainEntity::TerrainEntity(std::shared_ptr<Terrain> mesh, std::shared_ptr<Mate
 		199, 106, 157, 184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254, 138, 236,
 		205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180 
 	};
-	perlin = PerlinObject(permutation, 256);
+	PerlinObject perlin = PerlinObject(permutation, 256);
 
 	// Calculate perlin noise
 	for (Vertex& v : mesh->vertices)
 		v.Position.y += perlin.FractalBrownianMotion(v.Position.x * noiseDensity.x, v.Position.z * noiseDensity.y, 2);
 
-	// Calculate new normals
-	for (int i = 0; i < mesh->vertices.size(); i++)
-	{
+	//// Calculate new normals
+	//for (int i = 0; i < mesh->vertices.size(); i++)
+	//{
 
-	}
+	//}
 
 	mesh->UpdateVBO();
 }
@@ -47,16 +47,3 @@ void TerrainEntity::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11DeviceC
 {
 	//noiseOffset += deltaTime * 200.0f;
 }
-
-//void TerrainEntity::Draw(
-//	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, shared_ptr<Camera> camPtr)
-//{
-//	// Set permutation table and noise offsets in terrain vertex shader
-//	GetMaterial()->GetVS()->SetData("permutation", permutation, sizeof(int) * 512);
-//	GetMaterial()->GetVS()->SetFloat("noiseOffset", noiseOffset);
-//	GetMaterial()->GetPS()->SetFloat2("uvOffset", XMFLOAT2(noiseOffset, 0));
-//	GetMaterial()->GetVS()->SetFloat2("noiseDensity", noiseDensity);
-//
-//	// Do the rest of the normal drawing stuff
-//	GameEntity::Draw(context, camPtr);
-//}
