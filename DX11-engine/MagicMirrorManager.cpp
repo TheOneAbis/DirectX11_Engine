@@ -28,7 +28,7 @@ MagicMirrorManager::MagicMirrorManager(shared_ptr<Camera> playerCam,
 	for (int i = 0; i < 2; i++)
 		mirrors[i] = MagicMirror(make_shared<Mesh>(verts, 4, indices, 6, device, context), mirrorMat);
 
-	// Create mirror render target
+	// Create mirror render target and SRV
 	D3D11_TEXTURE2D_DESC mirrorTextDesc = {};
 	mirrorTextDesc.Width                = playerCam->viewDimensions.x;
 	mirrorTextDesc.Height               = playerCam->viewDimensions.y;
@@ -47,11 +47,36 @@ MagicMirrorManager::MagicMirrorManager(shared_ptr<Camera> playerCam,
 	device->CreateTexture2D(&mirrorTextDesc, 0, mirrorTextures.GetAddressOf());
 	device->CreateRenderTargetView(mirrorTextures.Get(), 0, mirrorTarget.GetAddressOf());
 	device->CreateShaderResourceView(mirrorTextures.Get(), 0, mirrorSRV.GetAddressOf());
+
+	// Create mirror-unique depth buffers
+	D3D11_TEXTURE2D_DESC depthStencilDesc = {};
+	depthStencilDesc.Width = playerCam->viewDimensions.x;
+	depthStencilDesc.Height = playerCam->viewDimensions.y;
+	depthStencilDesc.MipLevels = 1;
+	depthStencilDesc.ArraySize = 1;
+	depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
+	depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	depthStencilDesc.CPUAccessFlags = 0;
+	depthStencilDesc.MiscFlags = 0;
+	depthStencilDesc.SampleDesc.Count = 1;
+	depthStencilDesc.SampleDesc.Quality = 0;
+
+	// Create the depth buffer texture resources for both mirrors
+	for (int i = 0; i < 2; i++)
+	{
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> depthBufferTexture;
+		device->CreateTexture2D(&depthStencilDesc, 0, depthBufferTexture.GetAddressOf());
+
+		// If texture successfully created, create the DSV
+		if (depthBufferTexture != 0)
+			device->CreateDepthStencilView(depthBufferTexture.Get(), 0, mirrorDSVs[i].GetAddressOf());
+	}
 }
 
 void MagicMirrorManager::Init()
 {
-	mirrors[1].GetTransform()->SetPosition(0, 3, 0);
+	mirrors[1].GetTransform()->SetPosition(0, 5, 0);
 }
 
 void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, shared_ptr<Camera> camPtr)
@@ -115,6 +140,12 @@ void MagicMirrorManager::Draw(
 	shared_ptr<Camera> camPtr, vector<GameEntity*> gameObjects, 
 	vector<Light> lights, XMFLOAT3 ambientColor)
 {
+	//const float bgColor[4] = { 0.2f, 0.2f, 0.2f, 1.0f }; // dark grey
+	//context->ClearRenderTargetView(mirrorTarget.Get(), bgColor);
+
+	// Clear the depth buffer (resets per-pixel occlusion information)
+	context->ClearDepthStencilView(mirrorDSVs[0].Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
 	// Grab the original render targets for rebinding later
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> tempRender;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> tempDepth;
@@ -128,8 +159,9 @@ void MagicMirrorManager::Draw(
 	for (MagicMirror& m : mirrors)
 		m.Draw(context, camPtr);
 
-	// rebind to the original render target
-	context->OMSetRenderTargets(1, tempRender.GetAddressOf(), tempDepth.Get());
+	// rebind to the original render target and use the 
+	// mirror's DSV now to draw objects through the mirror
+	context->OMSetRenderTargets(1, tempRender.GetAddressOf(), mirrorDSVs[0].Get());
 
 	// Re-render all game entities through the mirror
 	for (GameEntity* gameObj : gameObjects)
@@ -142,9 +174,9 @@ void MagicMirrorManager::Draw(
 		std::shared_ptr<SimpleVertexShader> vs = mat->GetVS();
 		std::shared_ptr<SimplePixelShader> ps = mat->GetPS();
 
-		ps->SetData("lights",                         // name of the lights array in shader
-			&lights[0],                               // address of the data to set
-			sizeof(Light) * (int)lights.size());      // size of the data (whole struct) to set
+		ps->SetData("lights",
+			&lights[0],
+			sizeof(Light) * (int)lights.size());
 		ps->SetFloat3("ambientColor", ambientColor);
 
 		// Do any routine prep work for the material's shaders (i.e. loading stuff)
@@ -180,6 +212,8 @@ void MagicMirrorManager::Draw(
 		ps->SetShaderResourceView("MirrorMap", 0);
 		mat->SetPS(tempPS); // reset back to original pixel shader
 	}
+	// Set back to original DSV
+	context->OMSetRenderTargets(1, tempRender.GetAddressOf(), tempDepth.Get());
 }
 
 // Get one of the mirrors (index 0 or 1)

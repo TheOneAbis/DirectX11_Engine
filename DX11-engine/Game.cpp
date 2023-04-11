@@ -444,11 +444,12 @@ void Game::Draw(float deltaTime, float totalTime)
 		
 		gameObject->Draw(context, activeCam);
 	}
-	// Draw mirrors & update mirror maps, draw all objects through mirrors
-	mirrorManager->Draw(context, activeCam, gameObjects, lights, ambientColor);
-
+	
 	// Render the skybox
 	skybox->Draw(context, activeCam);
+
+	// Draw mirrors & update mirror maps, draw all objects through mirrors
+	mirrorManager->Draw(context, activeCam, gameObjects, lights, ambientColor);
 
 	// Render the UI
 	ImGui::Render();

@@ -29,6 +29,7 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> mirrorTarget;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mirrorSRV;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> mirrorDSVs[2];
 
 	DirectX::XMFLOAT4X4 mirrorViews[2];
 	DirectX::XMFLOAT4X4 mirrorProjs[2];
