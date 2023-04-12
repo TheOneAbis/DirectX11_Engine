@@ -1,4 +1,4 @@
-#include "MagicMirrorManager.h"
+ï»¿#include "MagicMirrorManager.h"
 #include "Helpers.h"
 #include <iostream>
 
@@ -77,73 +77,52 @@ MagicMirrorManager::MagicMirrorManager(shared_ptr<Camera> playerCam,
 
 void MagicMirrorManager::Init()
 {
-	mirrors[1].GetTransform()->SetPosition(0, 5, 0);
+	mirrors[1].GetTransform()->SetPosition(0.5f, 6.0f, 1.0f);
+	mirrors[1].GetTransform()->Rotate(0, 0.707f, 0);
 }
 
 void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, shared_ptr<Camera> camPtr)
 {
-	mirrors[1].GetTransform()->Rotate(deltaTime / 2, 0, 0);
+	mirrors[0].GetTransform()->Rotate(0, 0, 0);
+	mirrors[1].GetTransform()->Rotate(0, 0, 0);
 
-	// Get player cam in mirror-in space, negate x and z, then put it back in world space relative to mirror-out
-	XMMATRIX mirrorInWorld = XMLoadFloat4x4(&mirrors[0].GetTransform()->GetWorldMatrix());
-	XMVECTOR d = XMMatrixDeterminant(mirrorInWorld); // for calculating the inverse world
-	XMMATRIX mirrorOutWorld = XMLoadFloat4x4(&mirrors[1].GetTransform()->GetWorldMatrix());
-
-	XMVECTOR camPosMirrorOut = XMLoadFloat3(&camPtr->GetTransform().GetPosition()); // cam in world space
-	camPosMirrorOut = XMVector3Transform(camPosMirrorOut, XMMatrixInverse(&d, mirrorInWorld)); // cam in mirror-in space
-	camPosMirrorOut = XMVectorMultiply(camPosMirrorOut, XMVectorSet(-1, 1, -1, 1)); // negate x and z
-	camPosMirrorOut = XMVector3Transform(camPosMirrorOut, mirrorOutWorld); // consider cam to be in mirror-out space now, and put it back in world space
-	XMStoreFloat3(&mirrorCamPositions[1], camPosMirrorOut);
-
-	// Get the axis of rotation between look-in mirror forward and cam's forward
-	XMVECTOR mirrorInForward = XMLoadFloat3(&mirrors[0].GetTransform()->GetForward());
-	XMVECTOR camForward = XMLoadFloat3(&camPtr->GetTransform().GetForward());
-	XMVECTOR axis = XMVector3Cross(mirrorInForward, camForward);
-	XMFLOAT4 a;
-	XMStoreFloat4(&a, axis);
-	// Get the angle from the dot product
-	float angleRad;
-	XMStoreFloat(&angleRad, XMVector3Dot(mirrorInForward, camForward));
-	
-	// Calculate result of mirror forward rotated angleRad radians around axis
-	XMVECTOR newForward = XMLoadFloat3(&mirrors[1].GetTransform()->GetForward());
-	if (abs(angleRad) == 1) // if 0 or 180 deg, don't use axis as it will have length 0
+	for (int i = 0; i < 2; i++)
 	{
-		if (angleRad == -1) 
-			newForward = XMVectorScale(newForward, -1);
+		// -- CALCULATE MIRROR CAM POSITION
+		// Get player cam in mirror-in space, negate x and z, then put it back in world space relative to mirror-out
+		XMMATRIX mirrorInWorld = XMLoadFloat4x4(&mirrors[i].GetTransform()->GetWorldMatrix());
+		XMVECTOR d = XMMatrixDeterminant(mirrorInWorld); // for calculating the inverse world
+		XMMATRIX mirrorOutWorld = XMLoadFloat4x4(&mirrors[(i + 1) % 2].GetTransform()->GetWorldMatrix());
+
+		XMVECTOR camPosMirrorOut = XMLoadFloat3(&camPtr->GetTransform().GetPosition()); // cam in world space
+		camPosMirrorOut = XMVector3Transform(camPosMirrorOut, XMMatrixInverse(&d, mirrorInWorld)); // cam in mirror-in space
+		camPosMirrorOut = XMVectorMultiply(camPosMirrorOut, XMVectorSet(-1, 1, -1, 1)); // negate x and z
+		camPosMirrorOut = XMVector3Transform(camPosMirrorOut, mirrorOutWorld); // consider cam to be in mirror-out space now, and put it back in world space
+		XMStoreFloat3(&mirrorCamPositions[(i + 1) % 2], camPosMirrorOut);
+
+		// -- CALCULATE MIRROR CAM ROTATION
+		XMVECTOR camQuat = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&camPtr->GetTransform().GetPitchYawRoll()));
+		XMVECTOR mirrorInQuat = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&mirrors[i].GetTransform()->GetPitchYawRoll()));
+		XMVECTOR mirrorOutQuat = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&mirrors[(i + 1) % 2].GetTransform()->GetPitchYawRoll()));
+
+		camQuat = XMQuaternionMultiply(camQuat, XMQuaternionInverse(mirrorInQuat));
+		XMVECTOR newForward = XMVectorMultiply(XMVector3Rotate(XMVectorSet(0, 0, -1, 0), camQuat), XMVectorSet(1, -1, 1, 1));
+		camQuat = XMQuaternionMultiply(camQuat, mirrorOutQuat);
+
+		newForward = XMVector3Rotate(newForward, mirrorOutQuat);
+		XMVECTOR newUp = XMVector3Rotate(XMVectorSet(0, 1, 0, 0), camQuat); //stupid dumb stupid idiot not workin shit buttcock
+
+		// Then, use XMMatrixLookToLH() to create mirror cam's new view matrix
+		XMStoreFloat4x4(&mirrorViews[(i + 1) % 2], XMMatrixLookToLH(camPosMirrorOut, newForward, newUp));
+
+		// Set this mirror's projection matrix w/ new near clip
+		XMStoreFloat4x4(&mirrorProjs[(i + 1) % 2], XMMatrixPerspectiveFovLH(
+			camPtr->fov * (3.14159f / 180.0f),
+			camPtr->viewDimensions.x / camPtr->viewDimensions.y,
+			camPtr->nearClip, camPtr->farClip));
 	}
-	else
-		newForward = XMVector3Rotate(newForward, XMQuaternionRotationAxis(axis, acosf(angleRad)));
-	newForward = XMVectorMultiply(newForward, XMVectorSet(-1, 1, -1, 1)); // why cross product buggin
-
-	// Then, use XMMatrixLookToLH() to create mirror cam's new view matrix
-	XMMATRIX view = XMMatrixLookToLH(
-		camPosMirrorOut,                             // mirror camera position in world space
-		newForward,            // mirror Forward rotated by angle-axis quaternion
-		XMLoadFloat3(&mirrors[1].GetTransform()->GetUp())); // mirror Up axis
-
-	// Store matrix for sending to PS in Draw()
-	XMStoreFloat4x4(&mirrorViews[1], view);
-
-	// Set camera's near clip depth to farthest vertex in mirror mesh
-	XMFLOAT4X4 mirrorWorld = mirrors[1].GetTransform()->GetWorldMatrix();
-	//XMVECTOR mirrorWorldZCol = XMVectorSet(mirrorWorld._31, mirrorWorld ._32, mirrorWorld ._33, mirrorWorld ._34);
-
-	float newNear = camPtr->nearClip;
-	for (Vertex& v : mirrors[1].GetMesh()->vertices)
-	{
-		XMFLOAT4 posView;
-		XMVECTOR posVec = XMLoadFloat3(&v.Position);
-		XMStoreFloat4(&posView, XMVector3Transform(posVec, XMMatrixMultiply(view, XMLoadFloat4x4(&mirrorWorld))));
-		if (posView.z > newNear) newNear = posView.z;
-	}
-	//std::cout << newNear << std::endl;
-	// Set this mirror's projection matrix w/ new near clip
-	XMStoreFloat4x4(&mirrorProjs[1], XMMatrixPerspectiveFovLH(
-		camPtr->fov * (3.14159f / 180.0f), 
-		camPtr->viewDimensions.x / camPtr->viewDimensions.y, 
-		newNear, camPtr->farClip));
 }
+
 
 void MagicMirrorManager::Draw(
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, 
@@ -153,87 +132,88 @@ void MagicMirrorManager::Draw(
 	vector<Light> lights, 
 	XMFLOAT3 ambientColor)
 {
-	//const float bgColor[4] = { 0.2f, 0.2f, 0.2f, 1.0f }; // dark grey
-	//context->ClearRenderTargetView(mirrorTarget.Get(), bgColor);
-
-	// Clear the depth buffer (resets per-pixel occlusion information)
-	context->ClearDepthStencilView(mirrorDSVs[0].Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+	const float black[4] = { 0, 0, 0, 0 }; // dark grey
 
 	// Grab the original render targets for rebinding later
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> tempRender;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> tempDepth;
 	context->OMGetRenderTargets(1, tempRender.GetAddressOf(), tempDepth.GetAddressOf());
 
-	// Draw the mirrors (not to the viewport, but to the mirror texture)
-	const float black[4] = { 0, 0, 0, 1 };
-	context->ClearRenderTargetView(mirrorTarget.Get(), black);
-	context->OMSetRenderTargets(1, mirrorTarget.GetAddressOf(), tempDepth.Get()); // keep original DSV for setting the correct white pixels
-
-	for (MagicMirror& m : mirrors)
-		m.Draw(context, camPtr);
-
-	// rebind to the original render target and use the 
-	// mirror's DSV now to draw objects through the mirror
-	context->OMSetRenderTargets(1, tempRender.GetAddressOf(), mirrorDSVs[0].Get());
-
-	// Re-render all game entities through the mirror
-	for (GameEntity* gameObj : gameObjects)
+	for (int i = 0; i < 2; i++)
 	{
-		shared_ptr<Material> mat = gameObj->GetMaterial();
-		shared_ptr<SimplePixelShader> tempPS = mat->GetPS();
-		mat->SetPS(mirrorViewPS); // set to mirror pixel shader for drawing through mirror
-		Transform* trans = gameObj->GetTransform();
+		// Clear the depth buffer (resets per-pixel occlusion information)
+		context->ClearDepthStencilView(mirrorDSVs[i].Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-		std::shared_ptr<SimpleVertexShader> vs = mat->GetVS();
-		std::shared_ptr<SimplePixelShader> ps = mat->GetPS();
+		// Draw the mirrors (not to the viewport, but to the mirror texture)
+		context->ClearRenderTargetView(mirrorTarget.Get(), black);
+		context->OMSetRenderTargets(1, mirrorTarget.GetAddressOf(), tempDepth.Get()); // keep original DSV for setting the correct white pixels
+		mirrors[i].Draw(context, camPtr);
 
-		ps->SetData("lights",
-			&lights[0],
-			sizeof(Light) * (int)lights.size());
-		ps->SetFloat3("ambientColor", ambientColor);
+		// rebind to the original render target and use the 
+		// mirror's DSV now to draw objects through the mirror
+		context->OMSetRenderTargets(1, tempRender.GetAddressOf(), mirrorDSVs[i].Get());
 
-		// Do any routine prep work for the material's shaders (i.e. loading stuff)
-		mat->PrepareMaterial();
+		// Re-render all game entities through the mirror
+		for (GameEntity* gameObj : gameObjects)
+		{
+			shared_ptr<Material> mat = gameObj->GetMaterial();
+			shared_ptr<SimplePixelShader> tempPS = mat->GetPS();
+			mat->SetPS(mirrorViewPS); // set to mirror pixel shader for drawing through mirror
+			Transform* trans = gameObj->GetTransform();
 
-		vs->SetMatrix4x4("world", trans->GetWorldMatrix());
-		vs->SetMatrix4x4("worldInvTranspose", trans->GetWorldInverseTransposeMatrix());
-		vs->SetMatrix4x4("view", mirrorViews[1]);
-		vs->SetMatrix4x4("projection", mirrorProjs[1]);
+			std::shared_ptr<SimpleVertexShader> vs = mat->GetVS();
+			std::shared_ptr<SimplePixelShader> ps = mat->GetPS();
 
-		vs->CopyAllBufferData(); // Adjust “vs” variable name if necessary
+			ps->SetData("lights",
+				&lights[0],
+				sizeof(Light) * (int)lights.size());
+			ps->SetFloat3("ambientColor", ambientColor);
 
-		ps->SetFloat4("colorTint", mat->GetColor());
-		ps->SetFloat("roughness", mat->GetRoughness());
-		ps->SetFloat3("cameraPosition", mirrorCamPositions[1]);
-		ps->SetFloat("textureScale", gameObj->GetTextureUniformScale());
-		ps->SetFloat2("mirrorMapDimensions", camPtr->viewDimensions);
+			// Do any routine prep work for the material's shaders (i.e. loading stuff)
+			mat->PrepareMaterial();
 
-		// Set pixel shader mirror map
-		ps->SetShaderResourceView("MirrorMap", mirrorSRV);
+			vs->SetMatrix4x4("world", trans->GetWorldMatrix());
+			vs->SetMatrix4x4("worldInvTranspose", trans->GetWorldInverseTransposeMatrix());
+			vs->SetMatrix4x4("view", mirrorViews[(i + 1) % 2]);
+			vs->SetMatrix4x4("projection", mirrorProjs[(i + 1) % 2]);
 
-		ps->CopyAllBufferData();
+			vs->CopyAllBufferData(); // Adjust â€œvsâ€ variable name if necessary
 
-		// Set the shaders for this entity
-		vs->SetShader();
-		ps->SetShader();
+			ps->SetFloat4("colorTint", mat->GetColor());
+			ps->SetFloat("roughness", mat->GetRoughness());
+			ps->SetFloat3("cameraPosition", mirrorCamPositions[(i + 1) % 2]);
+			ps->SetFloat("textureScale", gameObj->GetTextureUniformScale());
+			ps->SetFloat2("mirrorMapDimensions", camPtr->viewDimensions);
+			ps->SetFloat3("mirrorNormal", mirrors[(i + 1) % 2].GetTransform()->GetForward());
+			ps->SetFloat3("mirrorPos", mirrors[(i + 1) % 2].GetTransform()->GetPosition());
 
-		// Draw the mesh
-		gameObj->GetMesh()->Draw();
+			// Set pixel shader mirror map
+			ps->SetShaderResourceView("MirrorMap", mirrorSRV);
 
-		// reset the SRV's and samplers for the next time so shader is fresh for a different material
-		mat->ResetTextureData();
-		ps->SetShaderResourceView("MirrorMap", 0);
-		mat->SetPS(tempPS); // reset back to original pixel shader
+			ps->CopyAllBufferData();
+
+			// Set the shaders for this entity
+			vs->SetShader();
+			ps->SetShader();
+
+			// Draw the mesh
+			gameObj->GetMesh()->Draw();
+
+			// reset the SRV's and samplers for the next time so shader is fresh for a different material
+			mat->ResetTextureData();
+			ps->SetShaderResourceView("MirrorMap", 0);
+			mat->SetPS(tempPS); // reset back to original pixel shader
+		}
+
+		// Draw the skybox through the mirror
+		skyboxMirrorPS->SetFloat2("mirrorMapDimensions", camPtr->viewDimensions);
+		skyboxMirrorPS->SetShaderResourceView("MirrorMap", mirrorSRV);
+		shared_ptr<SimplePixelShader> skyTempPS = skybox->GetPS();
+		skybox->SetPS(skyboxMirrorPS);
+		skybox->Draw(context, mirrorViews[(i + 1) % 2], mirrorProjs[(i + 1) % 2]);
+		skybox->SetPS(skyTempPS);
+		skyboxMirrorPS->SetShaderResourceView("MirrorMap", 0);
 	}
-
-	// Draw the skybox through the mirror
-	skyboxMirrorPS->SetFloat2("mirrorMapDimensions", camPtr->viewDimensions);
-	skyboxMirrorPS->SetShaderResourceView("MirrorMap", mirrorSRV);
-	shared_ptr<SimplePixelShader> skyTempPS = skybox->GetPS();
-	skybox->SetPS(skyboxMirrorPS);
-	skybox->Draw(context, mirrorViews[1], mirrorProjs[1]);
-	skybox->SetPS(skyTempPS);
-	skyboxMirrorPS->SetShaderResourceView("MirrorMap", 0);
 
 	// Set back to original DSV
 	context->OMSetRenderTargets(1, tempRender.GetAddressOf(), tempDepth.Get());

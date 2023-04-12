@@ -11,6 +11,9 @@ cbuffer ExternalData : register(b0)
     float2 uvOffset;
     float2 mirrorMapDimensions;
     
+    float3 mirrorNormal;
+    float3 mirrorPos;
+    
     int textureBitMask;
     Light lights[MAX_LIGHT_COUNT];
 }
@@ -34,9 +37,10 @@ SamplerState BasicSampler : register(s0); // "s" registers for samplers
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
-    // Skip this pixel if it does not overlap with the mirror's pixels 
+    // Skip this pixel if it does not overlap with the mirror's pixels OR it is behind the mirror
     // (the mirror pixels are white, everywhere else is black)
-    if (MirrorMap.Sample(BasicSampler, input.screenPosition.xy / mirrorMapDimensions).r == 0)
+    if (MirrorMap.Sample(BasicSampler, input.screenPosition.xy / mirrorMapDimensions).r < 1 ||
+        dot(normalize(-mirrorNormal), normalize(input.worldPosition - mirrorPos)) <= 0)
         discard;
     
     // Renormalize normals and tangents
