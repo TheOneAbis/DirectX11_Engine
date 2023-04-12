@@ -64,9 +64,9 @@ void Transform::MoveRelative(float x, float y, float z)
 
 void Transform::Rotate(float pitch, float yaw, float roll)
 {
-	XMVECTOR rotVec = XMVectorAdd(XMLoadFloat3(&rotation), XMVectorSet(pitch, yaw, roll, 0.0f));
-	XMStoreFloat3(&rotation, rotVec);
-
+	XMVECTOR rotVec = XMVectorAdd(XMLoadFloat3(&this->rotation), XMVectorSet(pitch, yaw, roll, 0.0f));
+	XMStoreFloat3(&this->rotation, rotVec);
+	UpdateLocalAxes();
 }
 
 void Transform::Rotate(DirectX::XMFLOAT3 rotation)
@@ -123,33 +123,33 @@ void Transform::SetScale(DirectX::XMFLOAT3 scale)
 // Get Position, Rotation, and Scale
 DirectX::XMFLOAT3& Transform::GetPosition()
 {
-	return position;
+	return this->position;
 }
 
 DirectX::XMFLOAT3& Transform::GetPitchYawRoll()
 {
-	return rotation;
+	return this->rotation;
 }
 
 DirectX::XMFLOAT3& Transform::GetScale()
 {
-	return scale;
+	return this->scale;
 }
 
 // Get Local Right, Up, and Forward
 DirectX::XMFLOAT3& Transform::GetRight()
 {
-	return right;
+	return this->right;
 }
 
 DirectX::XMFLOAT3& Transform::GetUp()
 {
-	return up;
+	return this->up;
 }
 
 DirectX::XMFLOAT3& Transform::GetForward()
 {
-	return forward;
+	return this->forward;
 }
 
 // Get World and Inverse Transpose Matrices

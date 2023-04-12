@@ -82,34 +82,43 @@ void MagicMirrorManager::Init()
 
 void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, shared_ptr<Camera> camPtr)
 {
-	// Set mirror 2 cam in mirror 2 space, which is player cam in mirror 1 space but negated
-	XMVECTOR mirror0PosVec = XMLoadFloat3(&mirrors[0].GetTransform()->GetPosition());
-	XMVECTOR mirror1PosVec = XMLoadFloat3(&mirrors[1].GetTransform()->GetPosition());
-	XMVECTOR mirrorCamPosOffset = XMVectorMultiply(XMVectorSubtract(mirror0PosVec,
-		XMLoadFloat3(&camPtr->GetTransform().GetPosition())), XMVectorSet(1, -1, 1, 1)); // cam -> mirror
+	mirrors[1].GetTransform()->Rotate(deltaTime / 2, 0, 0);
 
-	XMVECTOR mirrorCamPosWorld = XMVectorAdd(mirror1PosVec, mirrorCamPosOffset);
-	XMStoreFloat3(&mirrorCamPositions[1], mirrorCamPosWorld);
+	// Get player cam in mirror-in space, negate x and z, then put it back in world space relative to mirror-out
+	XMMATRIX mirrorInWorld = XMLoadFloat4x4(&mirrors[0].GetTransform()->GetWorldMatrix());
+	XMVECTOR d = XMMatrixDeterminant(mirrorInWorld); // for calculating the inverse world
+	XMMATRIX mirrorOutWorld = XMLoadFloat4x4(&mirrors[1].GetTransform()->GetWorldMatrix());
 
-	// Get the axis of rotation between look-in mirror forward and cam's NEGATED forward
-	XMVECTOR mirrorForward = XMLoadFloat3(&mirrors[0].GetTransform()->GetForward());
-	XMVECTOR camForwadNeg = XMVectorMultiply(XMLoadFloat3(&camPtr->GetTransform().GetForward()), XMVectorSet(-1, 1, -1, 1));
-	XMVECTOR axis = XMVector3Cross(mirrorForward, camForwadNeg);
+	XMVECTOR camPosMirrorOut = XMLoadFloat3(&camPtr->GetTransform().GetPosition()); // cam in world space
+	camPosMirrorOut = XMVector3Transform(camPosMirrorOut, XMMatrixInverse(&d, mirrorInWorld)); // cam in mirror-in space
+	camPosMirrorOut = XMVectorMultiply(camPosMirrorOut, XMVectorSet(-1, 1, -1, 1)); // negate x and z
+	camPosMirrorOut = XMVector3Transform(camPosMirrorOut, mirrorOutWorld); // consider cam to be in mirror-out space now, and put it back in world space
+	XMStoreFloat3(&mirrorCamPositions[1], camPosMirrorOut);
 
+	// Get the axis of rotation between look-in mirror forward and cam's forward
+	XMVECTOR mirrorInForward = XMLoadFloat3(&mirrors[0].GetTransform()->GetForward());
+	XMVECTOR camForward = XMLoadFloat3(&camPtr->GetTransform().GetForward());
+	XMVECTOR axis = XMVector3Cross(mirrorInForward, camForward);
+	XMFLOAT4 a;
+	XMStoreFloat4(&a, axis);
 	// Get the angle from the dot product
 	float angleRad;
-	XMStoreFloat(&angleRad, XMVector3Dot(mirrorForward, camForwadNeg));
-
+	XMStoreFloat(&angleRad, XMVector3Dot(mirrorInForward, camForward));
+	
 	// Calculate result of mirror forward rotated angleRad radians around axis
-	XMVECTOR newForward;
+	XMVECTOR newForward = XMLoadFloat3(&mirrors[1].GetTransform()->GetForward());
 	if (abs(angleRad) == 1) // if 0 or 180 deg, don't use axis as it will have length 0
-		newForward = angleRad == 1 ? mirrorForward : XMVectorScale(mirrorForward, -1);
+	{
+		if (angleRad == -1) 
+			newForward = XMVectorScale(newForward, -1);
+	}
 	else
-		newForward = XMVector3Rotate(mirrorForward, XMQuaternionRotationAxis(axis, acosf(angleRad)));
+		newForward = XMVector3Rotate(newForward, XMQuaternionRotationAxis(axis, acosf(angleRad)));
+	newForward = XMVectorMultiply(newForward, XMVectorSet(-1, 1, -1, 1)); // why cross product buggin
 
 	// Then, use XMMatrixLookToLH() to create mirror cam's new view matrix
 	XMMATRIX view = XMMatrixLookToLH(
-		mirrorCamPosWorld,                              // mirror camera position in world space
+		camPosMirrorOut,                             // mirror camera position in world space
 		newForward,            // mirror Forward rotated by angle-axis quaternion
 		XMLoadFloat3(&mirrors[1].GetTransform()->GetUp())); // mirror Up axis
 
