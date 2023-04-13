@@ -107,10 +107,10 @@ void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11De
 
 		camQuat = XMQuaternionMultiply(camQuat, XMQuaternionInverse(mirrorInQuat));
 		XMVECTOR newForward = XMVectorMultiply(XMVector3Rotate(XMVectorSet(0, 0, -1, 0), camQuat), XMVectorSet(1, -1, 1, 1));
-		camQuat = XMQuaternionMultiply(camQuat, mirrorOutQuat);
+		XMVECTOR newUp = XMVectorMultiply(XMVector3Rotate(XMVectorSet(0, -1, 0, 0), camQuat), XMVectorSet(1, -1, 1, 1));
 
 		newForward = XMVector3Rotate(newForward, mirrorOutQuat);
-		XMVECTOR newUp = XMVector3Rotate(XMVectorSet(0, 1, 0, 0), camQuat); //stupid dumb stupid idiot not workin shit buttcock
+		newUp = XMVector3Rotate(newUp, mirrorOutQuat);
 
 		// Then, use XMMatrixLookToLH() to create mirror cam's new view matrix
 		XMStoreFloat4x4(&mirrorViews[(i + 1) % 2], XMMatrixLookToLH(camPosMirrorOut, newForward, newUp));
