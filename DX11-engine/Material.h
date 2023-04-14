@@ -9,12 +9,13 @@ class Material
 public:
 
 	Material(DirectX::XMFLOAT4 color,
-		float roughness,
+		float roughness, float metalness,
 		std::shared_ptr<SimpleVertexShader> vertexShader,
 		std::shared_ptr<SimplePixelShader> pixelShader);
 
 	DirectX::XMFLOAT4 GetColor();
 	float GetRoughness();
+	float GetMetalness();
 	std::shared_ptr<SimpleVertexShader> GetVS();
 	std::shared_ptr<SimplePixelShader> GetPS();
 
@@ -32,6 +33,7 @@ private:
 
 	DirectX::XMFLOAT4 colorTint;
 	float roughness;
+	float metalness;
 	std::shared_ptr<SimpleVertexShader> vs;
 	std::shared_ptr<SimplePixelShader> ps;
 
@@ -39,7 +41,7 @@ private:
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> textureSRVs;
 	std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D11SamplerState>> samplers;
 
-	//                               NormalMap SpecularMap AlbedoMap
-	// 00000000 00000000 00000000 00000  0          0         0
+	//                                     MetalnessMap NormalMap RoughnessMap AlbedoMap
+	// 00000000 00000000 00000000 0000          0           0          0           0
 	unsigned int textureBitMask;
 };

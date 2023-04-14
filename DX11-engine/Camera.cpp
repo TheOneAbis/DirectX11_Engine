@@ -73,6 +73,7 @@ void Camera::Update(float dt)
 // Updates the camera's projection matrix
 void Camera::UpdateProjectionMatrix(float viewWidth, float viewHeight)
 {
+	this->viewDimensions = { viewWidth, viewHeight };
 	XMStoreFloat4x4(&projection, camType == Perspective ? 
 		XMMatrixPerspectiveFovLH(fov * (PI / 180.0f), viewWidth/viewHeight, nearClip, farClip) :
 		XMMatrixOrthographicLH(viewWidth, viewHeight, nearClip, farClip));

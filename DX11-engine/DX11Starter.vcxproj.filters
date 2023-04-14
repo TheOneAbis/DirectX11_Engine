@@ -243,6 +243,12 @@
     <FxCompile Include="PS_SkyboxMirror.hlsl">
       <Filter>Shaders\MirrorShaders</Filter>
     </FxCompile>
+    <FxCompile Include="PixelShader_PBR.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="PS_MagicMirrorView_PBR.hlsl">
+      <Filter>Shaders\MirrorShaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="ShaderIncludes.hlsli">

@@ -73,8 +73,9 @@ void GameEntity::Draw(
 
 	vs->CopyAllBufferData(); // Adjust “vs” variable name if necessary
 	
-	ps->SetFloat4("colorTint", material->GetColor()); 
+	ps->SetFloat4("colorTint", material->GetColor());
 	ps->SetFloat("roughness", material->GetRoughness());
+	ps->SetFloat("metalness", material->GetMetalness());
 	ps->SetFloat3("cameraPosition", camPtr->GetTransform().GetPosition());
 	ps->SetFloat("textureScale", textureScale);
 

@@ -12,10 +12,10 @@ MagicMirrorManager::MagicMirrorManager(shared_ptr<Camera> playerCam,
 	// Create mirror shaders
 	shared_ptr<SimpleVertexShader> mirrorVS = make_shared<SimpleVertexShader>(device, context, FixPath(L"VS_MagicMirror.cso").c_str());
 	shared_ptr<SimplePixelShader> mirrorPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_MagicMirror.cso").c_str());
-	mirrorViewPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_MagicMirrorView.cso").c_str());
+	mirrorViewPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_MagicMirrorView_PBR.cso").c_str());
 	skyboxMirrorPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_SkyboxMirror.cso").c_str());
 
-	shared_ptr<Material> mirrorMat = make_shared<Material>(XMFLOAT4(0, 0, 0, 0), 0, mirrorVS, mirrorPS);
+	shared_ptr<Material> mirrorMat = make_shared<Material>(XMFLOAT4(0, 0, 0, 0), 0, 0, mirrorVS, mirrorPS);
 	Vertex verts[4] =
 	{
 		{{ -1, 1, 0 }},
@@ -29,50 +29,7 @@ MagicMirrorManager::MagicMirrorManager(shared_ptr<Camera> playerCam,
 	for (int i = 0; i < 2; i++)
 		mirrors[i] = MagicMirror(make_shared<Mesh>(verts, 4, indices, 6, device, context), mirrorMat);
 
-	// Create mirror render target and SRV
-	D3D11_TEXTURE2D_DESC mirrorTextDesc = {};
-	mirrorTextDesc.Width                = playerCam->viewDimensions.x;
-	mirrorTextDesc.Height               = playerCam->viewDimensions.y;
-	mirrorTextDesc.MipLevels            = 1;
-	mirrorTextDesc.ArraySize            = 1;
-	mirrorTextDesc.Format               = DXGI_FORMAT_R8G8B8A8_UNORM;
-	mirrorTextDesc.Usage                = D3D11_USAGE_DEFAULT;
-	mirrorTextDesc.BindFlags            = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	mirrorTextDesc.CPUAccessFlags       = 0;
-	mirrorTextDesc.MiscFlags            = 0;
-	mirrorTextDesc.SampleDesc.Count     = 1;
-	mirrorTextDesc.SampleDesc.Quality   = 0;
-
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> mirrorTextures;
-
-	device->CreateTexture2D(&mirrorTextDesc, 0, mirrorTextures.GetAddressOf());
-	device->CreateRenderTargetView(mirrorTextures.Get(), 0, mirrorTarget.GetAddressOf());
-	device->CreateShaderResourceView(mirrorTextures.Get(), 0, mirrorSRV.GetAddressOf());
-
-	// Create mirror-unique depth buffers
-	D3D11_TEXTURE2D_DESC depthStencilDesc = {};
-	depthStencilDesc.Width = playerCam->viewDimensions.x;
-	depthStencilDesc.Height = playerCam->viewDimensions.y;
-	depthStencilDesc.MipLevels = 1;
-	depthStencilDesc.ArraySize = 1;
-	depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
-	depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-	depthStencilDesc.CPUAccessFlags = 0;
-	depthStencilDesc.MiscFlags = 0;
-	depthStencilDesc.SampleDesc.Count = 1;
-	depthStencilDesc.SampleDesc.Quality = 0;
-
-	// Create the depth buffer texture resources for both mirrors
-	for (int i = 0; i < 2; i++)
-	{
-		Microsoft::WRL::ComPtr<ID3D11Texture2D> depthBufferTexture;
-		device->CreateTexture2D(&depthStencilDesc, 0, depthBufferTexture.GetAddressOf());
-
-		// If texture successfully created, create the DSV
-		if (depthBufferTexture != 0)
-			device->CreateDepthStencilView(depthBufferTexture.Get(), 0, mirrorDSVs[i].GetAddressOf());
-	}
+	ResetMirrorTextures(playerCam.get(), device);
 }
 
 void MagicMirrorManager::Init()
@@ -129,8 +86,7 @@ void MagicMirrorManager::Draw(
 	shared_ptr<Camera> camPtr, 
 	vector<GameEntity*> gameObjects, 
 	std::shared_ptr<Skybox> skybox,
-	vector<Light> lights, 
-	XMFLOAT3 ambientColor)
+	vector<Light> lights)
 {
 	const float black[4] = { 0, 0, 0, 0 }; // dark grey
 
@@ -167,7 +123,6 @@ void MagicMirrorManager::Draw(
 			ps->SetData("lights",
 				&lights[0],
 				sizeof(Light) * (int)lights.size());
-			ps->SetFloat3("ambientColor", ambientColor);
 
 			// Do any routine prep work for the material's shaders (i.e. loading stuff)
 			mat->PrepareMaterial();
@@ -181,8 +136,11 @@ void MagicMirrorManager::Draw(
 
 			ps->SetFloat4("colorTint", mat->GetColor());
 			ps->SetFloat("roughness", mat->GetRoughness());
+			ps->SetFloat("metalness", mat->GetMetalness());
 			ps->SetFloat3("cameraPosition", mirrorCamPositions[(i + 1) % 2]);
 			ps->SetFloat("textureScale", gameObj->GetTextureUniformScale());
+
+			// send mirror data to PS
 			ps->SetFloat2("mirrorMapDimensions", camPtr->viewDimensions);
 			ps->SetFloat3("mirrorNormal", mirrors[(i + 1) % 2].GetTransform()->GetForward());
 			ps->SetFloat3("mirrorPos", mirrors[(i + 1) % 2].GetTransform()->GetPosition());
@@ -224,4 +182,64 @@ MagicMirror* MagicMirrorManager::GetMirror(int index)
 {
 	if (index < 0 || index > 1) return 0;
 	return &mirrors[index];
+}
+
+// Reset the mirror texture SRVs and RTVs (as well as the DSVs)
+// This is most likely useful for resetting the texture with different dimensions
+void MagicMirrorManager::ResetMirrorTextures(Camera* cam, Microsoft::WRL::ComPtr<ID3D11Device> device)
+{
+	// Create mirror render target and SRV
+	D3D11_TEXTURE2D_DESC mirrorTextDesc = {};
+	mirrorTextDesc.Width = cam->viewDimensions.x;
+	mirrorTextDesc.Height = cam->viewDimensions.y;
+	mirrorTextDesc.MipLevels = 1;
+	mirrorTextDesc.ArraySize = 1;
+	mirrorTextDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	mirrorTextDesc.Usage = D3D11_USAGE_DEFAULT;
+	mirrorTextDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	mirrorTextDesc.CPUAccessFlags = 0;
+	mirrorTextDesc.MiscFlags = 0;
+	mirrorTextDesc.SampleDesc.Count = 1;
+	mirrorTextDesc.SampleDesc.Quality = 0;
+
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> mirrorTextures;
+
+	device->CreateTexture2D(&mirrorTextDesc, 0, mirrorTextures.GetAddressOf());
+
+	// Reset the RTV and SRV ComPtrs for the new texture
+	mirrorTarget.Reset();
+	mirrorSRV.Reset();
+	device->CreateRenderTargetView(mirrorTextures.Get(), 0, mirrorTarget.GetAddressOf());
+	device->CreateShaderResourceView(mirrorTextures.Get(), 0, mirrorSRV.GetAddressOf());
+	mirrorTextures.Reset();
+
+	// Create mirror-unique depth buffers
+	D3D11_TEXTURE2D_DESC depthStencilDesc = {};
+	depthStencilDesc.Width = cam->viewDimensions.x;
+	depthStencilDesc.Height = cam->viewDimensions.y;
+	depthStencilDesc.MipLevels = 1;
+	depthStencilDesc.ArraySize = 1;
+	depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
+	depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	depthStencilDesc.CPUAccessFlags = 0;
+	depthStencilDesc.MiscFlags = 0;
+	depthStencilDesc.SampleDesc.Count = 1;
+	depthStencilDesc.SampleDesc.Quality = 0;
+
+	// Create the depth buffer texture resources for both mirrors
+	for (int i = 0; i < 2; i++)
+	{
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> depthBufferTexture;
+		device->CreateTexture2D(&depthStencilDesc, 0, depthBufferTexture.GetAddressOf());
+
+		// If texture successfully created, create the DSV
+		if (depthBufferTexture != 0)
+		{
+			// Reset the DSV first
+			mirrorDSVs[i].Reset();
+			device->CreateDepthStencilView(depthBufferTexture.Get(), 0, mirrorDSVs[i].GetAddressOf());
+		}
+		depthBufferTexture.Reset();
+	}
 }

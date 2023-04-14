@@ -91,7 +91,7 @@ void Game::Init()
 	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
 	newLight.Direction = XMFLOAT3(0.0f, -0.3f, -1.0f);
 	newLight.Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	newLight.Intensity = 3.0f;
+	newLight.Intensity = 1.0f;
 	lights.push_back(newLight);
 
 	newLight = {};
@@ -143,7 +143,7 @@ void Game::LoadShaders()
 {
 	// Make the shaders with SimpleShader (to see how to make them normally, check previous versions of this project)
 	vertexShader = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"VertexShader.cso").c_str());
-	pixelShader = std::make_shared<SimplePixelShader>(device, context, FixPath(L"PixelShader.cso").c_str());
+	pixelShader = std::make_shared<SimplePixelShader>(device, context, FixPath(L"PixelShader_PBR.cso").c_str());
 
 	customPS = std::make_shared<SimplePixelShader>(device, context, FixPath(L"CustomPS.cso").c_str());
 
@@ -191,39 +191,59 @@ void Game::CreateGeometry()
 
 	// Create materials
 	std::vector<std::shared_ptr<Material>> mats;
-	mats.push_back(std::make_shared<Material>(white, 0.0f, vertexShader, pixelShader));
-	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 0, 1, 1), 0.0f, vertexShader, pixelShader));
-	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.0f, vertexShader, pixelShader));
-	mats.push_back(std::make_shared<Material>(XMFLOAT4(1, 1, 1, 1), 0.0f, vertexShader, pixelShader));
+	mats.push_back(std::make_shared<Material>(white, 0.0f, 0.0f, vertexShader, pixelShader));
+	mats.push_back(std::make_shared<Material>(white, 0.0f, 0.0f, vertexShader, pixelShader));
+	mats.push_back(std::make_shared<Material>(white, 0.0f, 0.0f, vertexShader, pixelShader));
+	mats.push_back(std::make_shared<Material>(white, 0.0f, 0.0f, vertexShader, pixelShader));
 	// weird material
-	mats.push_back(std::make_shared<Material>(white, 0.1f, vertexShader, customPS));
+	mats.push_back(std::make_shared<Material>(white, 0.1f, 0.0f, vertexShader, customPS));
 
-	// Mat1 albedo and Normal
-	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/rock.png").c_str(), 0, srv.GetAddressOf());
+	// Mat 0
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/bronze_albedo.png").c_str(), 0, srv.GetAddressOf());
 	mats[0]->AddTextureSRV("AlbedoMap", srv);
-	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/rock_normals.png").c_str(), 0, srv.GetAddressOf());
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/bronze_metal.png").c_str(), 0, srv.GetAddressOf());
+	mats[0]->AddTextureSRV("MetalnessMap", srv);
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/bronze_normals.png").c_str(), 0, srv.GetAddressOf());
 	mats[0]->AddTextureSRV("NormalMap", srv);
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/bronze_roughness.png").c_str(), 0, srv.GetAddressOf());
+	mats[0]->AddTextureSRV("RoughnessMap", srv);
 
-	// Mat2 albedo and specular
-	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/tiles.png").c_str(), 0, srv.GetAddressOf());
+	// Mat 1
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/scratched_albedo.png").c_str(), 0, srv.GetAddressOf());
 	mats[1]->AddTextureSRV("AlbedoMap", srv);
-	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/tiles_specular.png").c_str(), 0, srv.GetAddressOf());
-	mats[1]->AddTextureSRV("SpecularMap", srv);
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/scratched_metal.png").c_str(), 0, srv.GetAddressOf());
+	mats[1]->AddTextureSRV("MetalnessMap", srv);
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/scratched_normals.png").c_str(), 0, srv.GetAddressOf());
+	mats[1]->AddTextureSRV("NormalMap", srv);
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/scratched_roughness.png").c_str(), 0, srv.GetAddressOf());
+	mats[1]->AddTextureSRV("RoughnessMap", srv);
 
-	// Mat2 albedo and normal
-	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/cobblestone.png").c_str(), 0, srv.GetAddressOf());
+	// Mat 2
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/cobblestone_albedo.png").c_str(), 0, srv.GetAddressOf());
 	mats[2]->AddTextureSRV("AlbedoMap", srv);
-	mats[3]->AddTextureSRV("AlbedoMap", srv);
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/cobblestone_metal.png").c_str(), 0, srv.GetAddressOf());
+	mats[2]->AddTextureSRV("MetalnessMap", srv);
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/cobblestone_normals.png").c_str(), 0, srv.GetAddressOf());
 	mats[2]->AddTextureSRV("NormalMap", srv);
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/cobblestone_roughness.png").c_str(), 0, srv.GetAddressOf());
+	mats[2]->AddTextureSRV("RoughnessMap", srv);
+
+	// Mat 3
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/rough_albedo.png").c_str(), 0, srv.GetAddressOf());
+	mats[3]->AddTextureSRV("AlbedoMap", srv);
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/rough_normals.png").c_str(), 0, srv.GetAddressOf());
 	mats[3]->AddTextureSRV("NormalMap", srv);
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/rough_metal.png").c_str(), 0, srv.GetAddressOf());
+	mats[3]->AddTextureSRV("MetalnessMap", srv);
+	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/rough_roughness.png").c_str(), 0, srv.GetAddressOf());
+	mats[3]->AddTextureSRV("RoughnessMap", srv);
 	
 	// Add default sampler for each material
 	for (std::shared_ptr<Material> mat : mats)
-		mat->AddSampler("BasicSampler", samplerState);
+		mat->AddSampler("SamplerOptions", samplerState);
 
 	// Create the game objects
-	gameObjects.push_back(new GameEntity(meshes[0], mats[2]));
+	gameObjects.push_back(new GameEntity(meshes[0], mats[0]));
 	gameObjects.push_back(new GameEntity(meshes[1], mats[1]));
 
 	gameObjects.push_back(new GameEntity(meshes[2], mats[2]));
@@ -233,7 +253,7 @@ void Game::CreateGeometry()
 
 	gameObjects.push_back(new GameEntity(meshes[3], mats[0]));
 
-	gameObjects.push_back(new CoolObject(meshes[0], mats[4]));
+	gameObjects.push_back(new GameEntity(meshes[0], mats[1]));
 	gameObjects.push_back(new TerrainEntity(std::make_shared<Terrain>(500, 500, device, context), mats[3], XMFLOAT2(2.5f, 2.5f))); // cool terrain entity
 	
 	// Create the mirror manager (this creates the mirrors and sets up all the backend)
@@ -285,6 +305,8 @@ void Game::OnResize()
 
 	for (std::shared_ptr<Camera> cam : cams)
 		cam->UpdateProjectionMatrix((float)windowWidth, (float)windowHeight);
+
+	mirrorManager->ResetMirrorTextures(activeCam.get(), device);
 }
 
 // --------------------------------------------------------
@@ -439,8 +461,6 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Clear the depth buffer (resets per-pixel occlusion information)
 		context->ClearDepthStencilView(depthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
-
-	XMFLOAT3 ambientColor = { 0.25f, 0.25f, 0.25f };
 	
 	// Render Game entities
 	for (GameEntity* gameObject : gameObjects)
@@ -449,7 +469,6 @@ void Game::Draw(float deltaTime, float totalTime)
 		ps->SetData("lights",                         // name of the lights array in shader
 			&lights[0],                               // address of the data to set
 			sizeof(Light) * (int)lights.size());      // size of the data (whole struct) to set
-		ps->SetFloat3("ambientColor", ambientColor);
 		
 		gameObject->Draw(context, activeCam);
 	}
@@ -458,7 +477,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	skybox->Draw(context, activeCam);
 
 	// Draw mirrors & update mirror maps, draw all objects through mirrors
-	mirrorManager->Draw(context, activeCam, gameObjects, skybox, lights, ambientColor);
+	mirrorManager->Draw(context, activeCam, gameObjects, skybox, lights);
 
 	// Render the UI
 	ImGui::Render();

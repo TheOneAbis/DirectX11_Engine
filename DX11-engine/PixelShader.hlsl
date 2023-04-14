@@ -99,5 +99,5 @@ float4 main(VertexToPixel input) : SV_TARGET
     }
     
     // correct color w/ gamma and return final color
-    return float4(pow(totalLightColor, 1 / 2.2f), 1);
+    return float4(pow(totalLightColor, 1.0f / 2.2f), 1);
 }

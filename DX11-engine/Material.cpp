@@ -5,12 +5,13 @@ using namespace DirectX;
 using namespace std;
 
 Material::Material(XMFLOAT4 color, 
-	float roughness,
+	float roughness, float metalness,
 	shared_ptr<SimpleVertexShader> vertexShader,
 	shared_ptr<SimplePixelShader>  pixelShader)
 {
 	colorTint = color;
 	this->roughness = roughness;
+	this->metalness = metalness;
 	vs = vertexShader;
 	ps = pixelShader;
 	textureBitMask = 0;
@@ -24,6 +25,11 @@ XMFLOAT4 Material::GetColor()
 float Material::GetRoughness()
 {
 	return roughness;
+}
+
+float Material::GetMetalness()
+{
+	return metalness;
 }
 
 shared_ptr<SimpleVertexShader> Material::GetVS()
@@ -71,12 +77,14 @@ void Material::ResetTextureData()
 
 void Material::AddTextureSRV(string name, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv)
 {
-	if (strcmp(name.c_str(), "AlbedoMap") == 0) // 1st bit
+	if (strcmp(name.c_str(), "AlbedoMap") == 0)    // 1st bit
 		textureBitMask |= 1;
-	if (strcmp(name.c_str(), "SpecularMap") == 0) // 2nd bit
+	if (strcmp(name.c_str(), "RoughnessMap") == 0) // 2nd bit
 		textureBitMask |= 2;
-	if (strcmp(name.c_str(), "NormalMap") == 0) // 3rd bit
+	if (strcmp(name.c_str(), "NormalMap") == 0)    // 3rd bit
 		textureBitMask |= 4;
+	if (strcmp(name.c_str(), "MetalnessMap") == 0) // 4th bit
+		textureBitMask |= 8;
 
 	textureSRVs.insert({ name, srv });
 }

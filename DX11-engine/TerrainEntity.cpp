@@ -33,12 +33,38 @@ TerrainEntity::TerrainEntity(std::shared_ptr<Terrain> mesh, std::shared_ptr<Mate
 	// Calculate perlin noise
 	for (Vertex& v : mesh->vertices)
 		v.Position.y += perlin.FractalBrownianMotion(v.Position.x * noiseDensity.x, v.Position.z * noiseDensity.y, 2);
+	unsigned int s = mesh->vertices.size();
 
-	//// Calculate new normals
-	//for (int i = 0; i < mesh->vertices.size(); i++)
-	//{
+	// Calculate new normals
+	for (unsigned int i = 0; i < mesh->resolution.y; i++)
+	{
+		for (unsigned int j = 0; j < mesh->resolution.x; j++)
+		{
+			Vertex main = mesh->vertices[j + (i * mesh->resolution.x)];
+			int iLeft = j + (i * mesh->resolution.x) - 1;
+			int iUp = j + ((i - 1) * mesh->resolution.x);
+			Vertex* right = j + (i * mesh->resolution.x) + 1 < s ? &mesh->vertices[j + (i * mesh->resolution.x) + 1] : 0;
+			Vertex* down = j + ((i + 1) * mesh->resolution.x) < s ? &mesh->vertices[j + ((i + 1) * mesh->resolution.x)] : 0;
+			Vertex* left = iLeft >= 0 ? &mesh->vertices[iLeft] : 0;
+			Vertex* up = iUp >= 0 ? &mesh->vertices[iUp] : 0;
 
-	//}
+			XMVECTOR vMain = XMLoadFloat3(&main.Position);
+			XMVECTOR vToRight = right == 0 ? XMVectorSet(0, 0, 0, 0) : XMVectorSubtract(XMLoadFloat3(&right->Position), vMain);
+			XMVECTOR vToDown = down == 0 ? XMVectorSet(0, 0, 0, 0) : XMVectorSubtract(XMLoadFloat3(&down->Position), vMain);
+			XMVECTOR vToLeft = left == 0 ? XMVectorSet(0, 0, 0, 0) : XMVectorSubtract(XMLoadFloat3(&left->Position), vMain);
+			XMVECTOR vToUp = up == 0 ? XMVectorSet(0, 0, 0, 0) : XMVectorSubtract(XMLoadFloat3(&up->Position), vMain);
+
+			XMVECTOR crossRightDown = XMVector3Cross(vToRight, vToDown);
+			XMVECTOR crossDownLeft = XMVector3Cross(vToDown, vToLeft);
+			XMVECTOR crossLeftUp = XMVector3Cross(vToLeft, vToUp);
+			XMVECTOR crossUpRight = XMVector3Cross(vToUp, vToRight);
+			
+			XMStoreFloat3(&mesh->vertices[j + (i * mesh->resolution.x)].Normal,
+				XMVector3Normalize(XMVectorAdd(
+					XMVectorAdd(crossRightDown, crossDownLeft), 
+					XMVectorAdd(crossLeftUp, crossUpRight))));
+		}
+	}
 
 	mesh->UpdateVBO();
 }

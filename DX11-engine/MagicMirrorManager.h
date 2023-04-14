@@ -24,10 +24,11 @@ public:
 		std::shared_ptr<Camera> camPtr, 
 		std::vector<GameEntity*> gameObjects, 
 		std::shared_ptr<Skybox> skybox,
-		std::vector<Light> lights, 
-		DirectX::XMFLOAT3 ambientColor);
+		std::vector<Light> lights);
 
 	MagicMirror* GetMirror(int index);
+
+	void ResetMirrorTextures(Camera* cam, Microsoft::WRL::ComPtr<ID3D11Device> device);
 
 private:
 
