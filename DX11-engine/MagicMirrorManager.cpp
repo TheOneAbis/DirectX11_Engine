@@ -85,96 +85,117 @@ void MagicMirrorManager::Draw(
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, 
 	shared_ptr<Camera> camPtr, 
 	vector<GameEntity*> gameObjects, 
-	std::shared_ptr<Skybox> skybox,
+	shared_ptr<Skybox> skybox,
 	vector<Light> lights)
 {
-	const float black[4] = { 0, 0, 0, 0 }; // dark grey
-
 	// Grab the original render targets for rebinding later
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> tempRender;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> tempDepth;
 	context->OMGetRenderTargets(1, tempRender.GetAddressOf(), tempDepth.GetAddressOf());
 
+	// Grab pointers to the viewport depth info for copying into mirror depth
+	Microsoft::WRL::ComPtr<ID3D11Resource> viewportDepth;
+	tempDepth->GetResource(viewportDepth.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11Resource> mirrorDepth;
+	mirrorDSV->GetResource(mirrorDepth.GetAddressOf());
+
 	for (int i = 0; i < 2; i++)
 	{
-		// Clear the depth buffer (resets per-pixel occlusion information)
-		context->ClearDepthStencilView(mirrorDSVs[i].Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
-
-		// Draw the mirrors (not to the viewport, but to the mirror texture)
-		context->ClearRenderTargetView(mirrorTarget.Get(), black);
-		context->OMSetRenderTargets(1, mirrorTarget.GetAddressOf(), tempDepth.Get()); // keep original DSV for setting the correct white pixels
-		mirrors[i].Draw(context, camPtr);
-
-		// rebind to the original render target and use the 
-		// mirror's DSV now to draw objects through the mirror
-		context->OMSetRenderTargets(1, tempRender.GetAddressOf(), mirrorDSVs[i].Get());
-
-		// Re-render all game entities through the mirror
-		for (GameEntity* gameObj : gameObjects)
-		{
-			shared_ptr<Material> mat = gameObj->GetMaterial();
-			shared_ptr<SimplePixelShader> tempPS = mat->GetPS();
-			mat->SetPS(mirrorViewPS); // set to mirror pixel shader for drawing through mirror
-			Transform* trans = gameObj->GetTransform();
-
-			std::shared_ptr<SimpleVertexShader> vs = mat->GetVS();
-			std::shared_ptr<SimplePixelShader> ps = mat->GetPS();
-
-			ps->SetData("lights",
-				&lights[0],
-				sizeof(Light) * (int)lights.size());
-
-			// Do any routine prep work for the material's shaders (i.e. loading stuff)
-			mat->PrepareMaterial();
-
-			vs->SetMatrix4x4("world", trans->GetWorldMatrix());
-			vs->SetMatrix4x4("worldInvTranspose", trans->GetWorldInverseTransposeMatrix());
-			vs->SetMatrix4x4("view", mirrorViews[(i + 1) % 2]);
-			vs->SetMatrix4x4("projection", mirrorProjs[(i + 1) % 2]);
-
-			vs->CopyAllBufferData(); // Adjust “vs” variable name if necessary
-
-			ps->SetFloat4("colorTint", mat->GetColor());
-			ps->SetFloat("roughness", mat->GetRoughness());
-			ps->SetFloat("metalness", mat->GetMetalness());
-			ps->SetFloat3("cameraPosition", mirrorCamPositions[(i + 1) % 2]);
-			ps->SetFloat("textureScale", gameObj->GetTextureUniformScale());
-
-			// send mirror data to PS
-			ps->SetFloat2("mirrorMapDimensions", camPtr->viewDimensions);
-			ps->SetFloat3("mirrorNormal", mirrors[(i + 1) % 2].GetTransform()->GetForward());
-			ps->SetFloat3("mirrorPos", mirrors[(i + 1) % 2].GetTransform()->GetPosition());
-
-			// Set pixel shader mirror map
-			ps->SetShaderResourceView("MirrorMap", mirrorSRV);
-
-			ps->CopyAllBufferData();
-
-			// Set the shaders for this entity
-			vs->SetShader();
-			ps->SetShader();
-
-			// Draw the mesh
-			gameObj->GetMesh()->Draw();
-
-			// reset the SRV's and samplers for the next time so shader is fresh for a different material
-			mat->ResetTextureData();
-			ps->SetShaderResourceView("MirrorMap", 0);
-			mat->SetPS(tempPS); // reset back to original pixel shader
-		}
-
-		// Draw the skybox through the mirror
-		skyboxMirrorPS->SetFloat2("mirrorMapDimensions", camPtr->viewDimensions);
-		skyboxMirrorPS->SetShaderResourceView("MirrorMap", mirrorSRV);
-		shared_ptr<SimplePixelShader> skyTempPS = skybox->GetPS();
-		skybox->SetPS(skyboxMirrorPS);
-		skybox->Draw(context, mirrorViews[(i + 1) % 2], mirrorProjs[(i + 1) % 2]);
-		skybox->SetPS(skyTempPS);
-		skyboxMirrorPS->SetShaderResourceView("MirrorMap", 0);
+		// Copy the original viewport Depth info into Mirror depth to start with
+		context->CopyResource(mirrorDepth.Get(), viewportDepth.Get());
+		// Render all objects through the mirror 
+		// (NOTE: this is recursive because objects inside of mirrors inside of this mirror are also drawn)
+		RenderThroughMirror(i, tempRender, context, camPtr, gameObjects, skybox, lights);
 	}
 
 	// Set back to original DSV
 	context->OMSetRenderTargets(1, tempRender.GetAddressOf(), tempDepth.Get());
+}
+
+void MagicMirrorManager::RenderThroughMirror(int mirrorIndex,
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> viewportTarget,
+	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
+	shared_ptr<Camera> camPtr,
+	vector<GameEntity*> gameObjects,
+	shared_ptr<Skybox> skybox,
+	vector<Light> lights)
+{
+	const float black[4] = { 0, 0, 0, 0 }; // keep this black
+
+	// Draw the mirrors (not to the viewport, but to the mirror texture)
+	context->ClearRenderTargetView(mirrorTarget.Get(), black);
+	context->OMSetRenderTargets(1, mirrorTarget.GetAddressOf(), mirrorDSV.Get()); // keep original DSV for setting the correct white pixels
+	mirrors[mirrorIndex % 2].Draw(context, camPtr);
+
+	// Clear the depth buffer (resets per-pixel occlusion information)
+	context->ClearDepthStencilView(mirrorDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	// rebind to the original render target and use the 
+	// mirror's DSV now to draw objects through the mirror
+	context->OMSetRenderTargets(1, viewportTarget.GetAddressOf(), mirrorDSV.Get());
+
+	// Re-render all game entities through the mirror
+	for (GameEntity* gameObj : gameObjects)
+	{
+		shared_ptr<Material> mat = gameObj->GetMaterial();
+		shared_ptr<SimplePixelShader> tempPS = mat->GetPS();
+		mat->SetPS(mirrorViewPS); // set to mirror pixel shader for drawing through mirror
+		Transform* trans = gameObj->GetTransform();
+
+		std::shared_ptr<SimpleVertexShader> vs = mat->GetVS();
+		std::shared_ptr<SimplePixelShader> ps = mat->GetPS();
+
+		ps->SetData("lights",
+			&lights[0],
+			sizeof(Light) * (int)lights.size());
+
+		// Do any routine prep work for the material's shaders (i.e. loading stuff)
+		mat->PrepareMaterial();
+
+		vs->SetMatrix4x4("world", trans->GetWorldMatrix());
+		vs->SetMatrix4x4("worldInvTranspose", trans->GetWorldInverseTransposeMatrix());
+		vs->SetMatrix4x4("view", mirrorViews[(mirrorIndex + 1) % 2]);
+		vs->SetMatrix4x4("projection", mirrorProjs[(mirrorIndex + 1) % 2]);
+
+		vs->CopyAllBufferData(); // Adjust “vs” variable name if necessary
+
+		ps->SetFloat4("colorTint", mat->GetColor());
+		ps->SetFloat("roughness", mat->GetRoughness());
+		ps->SetFloat("metalness", mat->GetMetalness());
+		ps->SetFloat3("cameraPosition", mirrorCamPositions[(mirrorIndex + 1) % 2]);
+		ps->SetFloat("textureScale", gameObj->GetTextureUniformScale());
+
+		// send mirror data to PS
+		ps->SetFloat2("mirrorMapDimensions", camPtr->viewDimensions);
+		ps->SetFloat3("mirrorNormal", mirrors[(mirrorIndex + 1) % 2].GetTransform()->GetForward());
+		ps->SetFloat3("mirrorPos", mirrors[(mirrorIndex + 1) % 2].GetTransform()->GetPosition());
+
+		// Set pixel shader mirror map
+		ps->SetShaderResourceView("MirrorMap", mirrorSRV);
+
+		ps->CopyAllBufferData();
+
+		// Set the shaders for this entity
+		vs->SetShader();
+		ps->SetShader();
+
+		// Draw the mesh
+		gameObj->GetMesh()->Draw();
+
+		// reset the SRV's and samplers for the next time so shader is fresh for a different material
+		mat->ResetTextureData();
+		ps->SetShaderResourceView("MirrorMap", 0);
+		mat->SetPS(tempPS); // reset back to original pixel shader
+	}
+
+	// Draw the skybox through the mirror
+	skyboxMirrorPS->SetFloat2("mirrorMapDimensions", camPtr->viewDimensions);
+	skyboxMirrorPS->SetShaderResourceView("MirrorMap", mirrorSRV);
+	shared_ptr<SimplePixelShader> skyTempPS = skybox->GetPS();
+	skybox->SetPS(skyboxMirrorPS);
+	skybox->Draw(context, mirrorViews[(mirrorIndex + 1) % 2], mirrorProjs[(mirrorIndex + 1) % 2]);
+	skybox->SetPS(skyTempPS);
+	skyboxMirrorPS->SetShaderResourceView("MirrorMap", 0);
 }
 
 // Get one of the mirrors (index 0 or 1)
@@ -228,18 +249,15 @@ void MagicMirrorManager::ResetMirrorTextures(Camera* cam, Microsoft::WRL::ComPtr
 	depthStencilDesc.SampleDesc.Quality = 0;
 
 	// Create the depth buffer texture resources for both mirrors
-	for (int i = 0; i < 2; i++)
-	{
-		Microsoft::WRL::ComPtr<ID3D11Texture2D> depthBufferTexture;
-		device->CreateTexture2D(&depthStencilDesc, 0, depthBufferTexture.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> depthBufferTexture;
+	device->CreateTexture2D(&depthStencilDesc, 0, depthBufferTexture.GetAddressOf());
 
-		// If texture successfully created, create the DSV
-		if (depthBufferTexture != 0)
-		{
-			// Reset the DSV first
-			mirrorDSVs[i].Reset();
-			device->CreateDepthStencilView(depthBufferTexture.Get(), 0, mirrorDSVs[i].GetAddressOf());
-		}
-		depthBufferTexture.Reset();
+	// If texture successfully created, create the DSV
+	if (depthBufferTexture != 0)
+	{
+		// Reset the DSV pointer first
+		mirrorDSV.Reset();
+		device->CreateDepthStencilView(depthBufferTexture.Get(), 0, mirrorDSV.GetAddressOf());
 	}
+	depthBufferTexture.Reset();
 }
