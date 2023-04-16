@@ -67,26 +67,23 @@ void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11De
 		XMVECTOR newUp = XMVectorMultiply(XMVector3Rotate(XMVectorSet(0, -1, 0, 0), camQuat), XMVectorSet(1, -1, 1, 1));
 
 		newForward = XMVector3Rotate(newForward, mirrorOutQuat);
+		XMStoreFloat3(&mirrorCamForwards[(i + 1) % 2], newForward);
 		newUp = XMVector3Rotate(newUp, mirrorOutQuat);
-
-		// Then, use XMMatrixLookToLH() to create mirror cam's new view matrix
-		XMStoreFloat4x4(&mirrorViews[(i + 1) % 2], XMMatrixLookToLH(camPosMirrorOut, newForward, newUp));
-
-		// Set this mirror's projection matrix w/ new near clip
-		XMStoreFloat4x4(&mirrorProjs[(i + 1) % 2], XMMatrixPerspectiveFovLH(
-			camPtr->fov * (3.14159f / 180.0f),
-			camPtr->viewDimensions.x / camPtr->viewDimensions.y,
-			camPtr->nearClip, camPtr->farClip));
+		XMStoreFloat3(&mirrorCamUps[(i + 1) % 2], newUp);
 	}
+
+	// Set this mirror's projection matrix w/ new near clip
+	XMStoreFloat4x4(&mirrorProj, XMMatrixPerspectiveFovLH(
+		camPtr->fov * (3.14159f / 180.0f),
+		camPtr->viewDimensions.x / camPtr->viewDimensions.y,
+		camPtr->nearClip, camPtr->farClip));
 }
 
 
 void MagicMirrorManager::Draw(
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, 
-	shared_ptr<Camera> camPtr, 
-	vector<GameEntity*> gameObjects, 
-	shared_ptr<Skybox> skybox,
-	vector<Light> lights)
+	shared_ptr<Camera> camPtr, vector<GameEntity*> gameObjects, 
+	shared_ptr<Skybox> skybox, vector<Light> lights)
 {
 	// Grab the original render targets for rebinding later
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> tempRender;
@@ -105,20 +102,18 @@ void MagicMirrorManager::Draw(
 		context->CopyResource(mirrorDepth.Get(), viewportDepth.Get());
 		// Render all objects through the mirror 
 		// (NOTE: this is recursive because objects inside of mirrors inside of this mirror are also drawn)
-		RenderThroughMirror(i, tempRender, context, camPtr, gameObjects, skybox, lights);
+		RenderThroughMirror(i, mirrorCamPositions[(i + 1) % 2], tempRender, context, camPtr, gameObjects, skybox, lights);
 	}
 
 	// Set back to original DSV
 	context->OMSetRenderTargets(1, tempRender.GetAddressOf(), tempDepth.Get());
 }
 
-void MagicMirrorManager::RenderThroughMirror(int mirrorIndex,
+void MagicMirrorManager::RenderThroughMirror(int mirrorIndex, XMFLOAT3 mirrorCamPos,
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> viewportTarget,
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
-	shared_ptr<Camera> camPtr,
-	vector<GameEntity*> gameObjects,
-	shared_ptr<Skybox> skybox,
-	vector<Light> lights)
+	shared_ptr<Camera> camPtr, vector<GameEntity*> gameObjects,
+	shared_ptr<Skybox> skybox, vector<Light> lights)
 {
 	const float black[4] = { 0, 0, 0, 0 }; // keep this black
 
@@ -133,6 +128,13 @@ void MagicMirrorManager::RenderThroughMirror(int mirrorIndex,
 	// rebind to the original render target and use the 
 	// mirror's DSV now to draw objects through the mirror
 	context->OMSetRenderTargets(1, viewportTarget.GetAddressOf(), mirrorDSV.Get());
+
+	// Use XMMatrixLookToLH() to create mirror cam's view matrix
+	XMFLOAT4X4 mirrorCamView;
+	XMStoreFloat4x4(&mirrorCamView, XMMatrixLookToLH(
+		XMLoadFloat3(&mirrorCamPos), 
+		XMLoadFloat3(&mirrorCamForwards[(mirrorIndex + 1) % 2]), 
+		XMLoadFloat3(&mirrorCamUps[(mirrorIndex + 1) % 2])));
 
 	// Re-render all game entities through the mirror
 	for (GameEntity* gameObj : gameObjects)
@@ -154,8 +156,8 @@ void MagicMirrorManager::RenderThroughMirror(int mirrorIndex,
 
 		vs->SetMatrix4x4("world", trans->GetWorldMatrix());
 		vs->SetMatrix4x4("worldInvTranspose", trans->GetWorldInverseTransposeMatrix());
-		vs->SetMatrix4x4("view", mirrorViews[(mirrorIndex + 1) % 2]);
-		vs->SetMatrix4x4("projection", mirrorProjs[(mirrorIndex + 1) % 2]);
+		vs->SetMatrix4x4("view", mirrorCamView);
+		vs->SetMatrix4x4("projection", mirrorProj);
 
 		vs->CopyAllBufferData(); // Adjust “vs” variable name if necessary
 
@@ -193,7 +195,7 @@ void MagicMirrorManager::RenderThroughMirror(int mirrorIndex,
 	skyboxMirrorPS->SetShaderResourceView("MirrorMap", mirrorSRV);
 	shared_ptr<SimplePixelShader> skyTempPS = skybox->GetPS();
 	skybox->SetPS(skyboxMirrorPS);
-	skybox->Draw(context, mirrorViews[(mirrorIndex + 1) % 2], mirrorProjs[(mirrorIndex + 1) % 2]);
+	skybox->Draw(context, mirrorCamView, mirrorProj);
 	skybox->SetPS(skyTempPS);
 	skyboxMirrorPS->SetShaderResourceView("MirrorMap", 0);
 }

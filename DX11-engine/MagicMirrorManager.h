@@ -21,10 +21,8 @@ public:
 	
 	void Draw(
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
-		std::shared_ptr<Camera> camPtr, 
-		std::vector<GameEntity*> gameObjects, 
-		std::shared_ptr<Skybox> skybox,
-		std::vector<Light> lights);
+		std::shared_ptr<Camera> camPtr, std::vector<GameEntity*> gameObjects, 
+		std::shared_ptr<Skybox> skybox, std::vector<Light> lights);
 
 	MagicMirror* GetMirror(int index);
 
@@ -36,13 +34,15 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mirrorSRV;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> mirrorDSV;
 
-	DirectX::XMFLOAT4X4 mirrorViews[2];
-	DirectX::XMFLOAT4X4 mirrorProjs[2];
+	DirectX::XMFLOAT4X4 mirrorProj;
 	DirectX::XMFLOAT3 mirrorCamPositions[2];
+	DirectX::XMFLOAT3 mirrorCamForwards[2];
+	DirectX::XMFLOAT3 mirrorCamUps[2];
+
 	std::shared_ptr<SimplePixelShader> mirrorViewPS;
 	std::shared_ptr<SimplePixelShader> skyboxMirrorPS;
 
-	void RenderThroughMirror(int mirrorIndex,
+	void RenderThroughMirror(int mirrorIndex, DirectX::XMFLOAT3 mirrorCamPos,
 		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> viewportTarget,
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
 		std::shared_ptr<Camera> camPtr,
