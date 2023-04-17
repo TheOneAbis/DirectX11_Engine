@@ -55,9 +55,15 @@ void GameEntity::Init() {}
 // Update() is meant to be overriden by subclasses
 void GameEntity::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) {}
 
-void GameEntity::Draw(
-	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
-	shared_ptr<Camera> camPtr)
+// Draw the game object using the given camera, setting required shader data
+void GameEntity::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, shared_ptr<Camera> camPtr)
+{
+	Draw(context, camPtr->GetTransform().GetPosition(), camPtr->GetView(), camPtr->GetProjection());
+}
+
+// Draw the game object using a given camera position, view and projection matrix
+void GameEntity::Draw(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
+	XMFLOAT3 cameraPos, XMFLOAT4X4 viewMatrix, XMFLOAT4X4 projMatrix)
 {
 	// Do any routine prep work for the material's shaders (i.e. loading stuff)
 	material->PrepareMaterial();
@@ -68,15 +74,15 @@ void GameEntity::Draw(
 	// Strings here MUST  match variable names in your shader’s cbuffer!
 	vs->SetMatrix4x4("world", transform.GetWorldMatrix());
 	vs->SetMatrix4x4("worldInvTranspose", transform.GetWorldInverseTransposeMatrix());
-	vs->SetMatrix4x4("view", camPtr->GetView());
-	vs->SetMatrix4x4("projection", camPtr->GetProjection());
+	vs->SetMatrix4x4("view", viewMatrix);
+	vs->SetMatrix4x4("projection", projMatrix);
 
 	vs->CopyAllBufferData(); // Adjust “vs” variable name if necessary
-	
+
 	ps->SetFloat4("colorTint", material->GetColor());
 	ps->SetFloat("roughness", material->GetRoughness());
 	ps->SetFloat("metalness", material->GetMetalness());
-	ps->SetFloat3("cameraPosition", camPtr->GetTransform().GetPosition());
+	ps->SetFloat3("cameraPosition", cameraPos);
 	ps->SetFloat("textureScale", textureScale);
 
 	ps->CopyAllBufferData();

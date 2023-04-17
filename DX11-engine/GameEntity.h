@@ -39,7 +39,13 @@ public:
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
 		std::shared_ptr<Camera> camPtr);
 
-	//// Personal Note: Linker doesn't like separating templated functions bewteen .h and .cpp files. Stupid.
+	virtual void Draw(
+		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
+		DirectX::XMFLOAT3 cameraPos,
+		DirectX::XMFLOAT4X4 viewMatrix,
+		DirectX::XMFLOAT4X4 projMatrix);
+
+	// Personal Note: Linker doesn't like separating templated functions between .h and .cpp files. Stupid.
 
 	// Returns this entity's component of the given type
 	template <class ComponentType>

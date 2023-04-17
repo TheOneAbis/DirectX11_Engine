@@ -24,7 +24,7 @@ Texture2D NormalMap : register(t2); // Normal map
 
 Texture2D MirrorMap : register(t3); // mirror map that was drawn to
 
-SamplerState BasicSampler : register(s0); // "s" registers for samplers
+SamplerState SamplerOptions : register(s0); // "s" registers for samplers
 
 // --------------------------------------------------------
 // The entry point (main method) for our pixel shader
@@ -39,7 +39,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 {
     // Skip this pixel if it does not overlap with the mirror's pixels OR it is behind the mirror
     // (the mirror pixels are white, everywhere else is black)
-    if (MirrorMap.Sample(BasicSampler, input.screenPosition.xy / mirrorMapDimensions).r < 1 ||
+    if (MirrorMap.Sample(SamplerOptions, input.screenPosition.xy / mirrorMapDimensions).r < 1 ||
         dot(normalize(-mirrorNormal), normalize(input.worldPosition - mirrorPos)) <= 0)
         discard;
     
@@ -56,7 +56,7 @@ float4 main(VertexToPixel input) : SV_TARGET
     if ((textureBitMask & 4) == 4)
     {
         // Renormalize from the map if using normal map
-        float3 normalFromMap = normalize(NormalMap.Sample(BasicSampler, input.uv * textureScale).rgb * 2 - 1); // scale 0 to 1 values to -1 to 1
+        float3 normalFromMap = normalize(NormalMap.Sample(SamplerOptions, input.uv * textureScale).rgb * 2 - 1); // scale 0 to 1 values to -1 to 1
         
         // rotate normal map to convert from tangent to world space (since our input values are already in world space from VS)
         // Ensure we orthonormalize the tangent again
@@ -72,7 +72,7 @@ float4 main(VertexToPixel input) : SV_TARGET
     
     // Sample the surface texture for the initial pixel color (scale texture if a scale was specified)
     // If using texture for surface, un-correct the color w/ gamma value
-    float3 surfaceColor = ((textureBitMask & 1) == 1 ? pow(AlbedoMap.Sample(BasicSampler, input.uv * textureScale).rgb, 2.2f) : 1) * colorTint.xyz;
+    float3 surfaceColor = ((textureBitMask & 1) == 1 ? pow(AlbedoMap.Sample(SamplerOptions, input.uv * textureScale).rgb, 2.2f) : 1) * colorTint.xyz;
     float3 totalLightColor = ambientColor * surfaceColor;
     
     bool attenuate = false;
@@ -101,7 +101,7 @@ float4 main(VertexToPixel input) : SV_TARGET
             surfaceColor,
             viewVector,
             roughness,
-            (textureBitMask & 2) == 2 ? SpecularMap.Sample(BasicSampler, input.uv * textureScale).r : 1) * lights[i].Intensity;
+            (textureBitMask & 2) == 2 ? SpecularMap.Sample(SamplerOptions, input.uv * textureScale).r : 1) * lights[i].Intensity;
 
         // If this is a point or spot light, attenuate the color
         if (attenuate)
