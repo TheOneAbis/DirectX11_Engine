@@ -44,6 +44,7 @@ private:
 
 	void RenderThroughMirror(int mirrorIndex, DirectX::XMFLOAT3 mirrorCamPos,
 		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> viewportTarget,
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilView> viewportDSV,
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
 		std::shared_ptr<Camera> camPtr,
 		std::vector<GameEntity*> gameObjects,

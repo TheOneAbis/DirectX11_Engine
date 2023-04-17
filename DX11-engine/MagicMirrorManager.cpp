@@ -102,7 +102,7 @@ void MagicMirrorManager::Draw(
 		context->CopyResource(mirrorDepth.Get(), viewportDepth.Get());
 		// Render all objects through the mirror 
 		// (NOTE: this is recursive because objects inside of mirrors inside of this mirror are also drawn)
-		RenderThroughMirror(i, mirrorCamPositions[(i + 1) % 2], tempRender, context, camPtr, gameObjects, skybox, lights);
+		RenderThroughMirror(i, mirrorCamPositions[(i + 1) % 2], tempRender, tempDepth, context, camPtr, gameObjects, skybox, lights);
 	}
 
 	// Set back to original DSV
@@ -111,6 +111,7 @@ void MagicMirrorManager::Draw(
 
 void MagicMirrorManager::RenderThroughMirror(int mirrorIndex, XMFLOAT3 mirrorCamPos,
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> viewportTarget,
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> viewportDSV,
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
 	shared_ptr<Camera> camPtr, vector<GameEntity*> gameObjects,
 	shared_ptr<Skybox> skybox, vector<Light> lights)
@@ -119,7 +120,7 @@ void MagicMirrorManager::RenderThroughMirror(int mirrorIndex, XMFLOAT3 mirrorCam
 
 	// Draw the mirrors (not to the viewport, but to the mirror texture)
 	context->ClearRenderTargetView(mirrorTarget.Get(), black);
-	context->OMSetRenderTargets(1, mirrorTarget.GetAddressOf(), mirrorDSV.Get()); // keep original DSV for setting the correct white pixels
+	context->OMSetRenderTargets(1, mirrorTarget.GetAddressOf(), viewportDSV.Get()); // keep original DSV for setting the correct white pixels
 	mirrors[mirrorIndex % 2].Draw(context, camPtr);
 
 	// Clear the depth buffer (resets per-pixel occlusion information)
