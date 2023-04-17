@@ -11,7 +11,8 @@ MagicMirrorManager::MagicMirrorManager(shared_ptr<Camera> playerCam,
 {
 	// Create mirror shaders
 	shared_ptr<SimpleVertexShader> mirrorVS = make_shared<SimpleVertexShader>(device, context, FixPath(L"VS_MagicMirror.cso").c_str());
-	shared_ptr<SimplePixelShader> mirrorPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_MagicMirror.cso").c_str());
+	mirrorPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_MagicMirror.cso").c_str());
+	mirrorPSCulled = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_MagicMirror_Culled.cso").c_str());
 	mirrorViewPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_MagicMirrorView_PBR.cso").c_str());
 	skyboxMirrorPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_SkyboxMirror.cso").c_str());
 
@@ -61,6 +62,8 @@ void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11De
 		XMVECTOR camQuat = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&camPtr->GetTransform().GetPitchYawRoll()));
 		XMVECTOR mirrorInQuat = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&mirrors[i].GetTransform()->GetPitchYawRoll()));
 		XMVECTOR mirrorOutQuat = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&mirrors[(i + 1) % 2].GetTransform()->GetPitchYawRoll()));
+		// store rotation difference for later use
+		XMStoreFloat4(&mirrorQuatDiff, XMQuaternionMultiply(mirrorInQuat, XMQuaternionInverse(mirrorOutQuat)));
 
 		camQuat = XMQuaternionMultiply(camQuat, XMQuaternionInverse(mirrorInQuat));
 		XMVECTOR newForward = XMVectorMultiply(XMVector3Rotate(XMVectorSet(0, 0, -1, 0), camQuat), XMVectorSet(1, -1, 1, 1));
@@ -102,26 +105,33 @@ void MagicMirrorManager::Draw(
 		context->CopyResource(mirrorDepth.Get(), viewportDepth.Get());
 		// Render all objects through the mirror 
 		// (NOTE: this is recursive because objects inside of mirrors inside of this mirror are also drawn)
-		RenderThroughMirror(i, mirrorCamPositions[(i + 1) % 2], tempRender, tempDepth, context, camPtr, gameObjects, skybox, lights);
+		RenderThroughMirror(i, 0, mirrorCamPositions[(i + 1) % 2], camPtr->GetTransform().GetPosition(), tempRender, tempDepth, context, camPtr, gameObjects, skybox, lights);
 	}
 
 	// Set back to original DSV
 	context->OMSetRenderTargets(1, tempRender.GetAddressOf(), tempDepth.Get());
 }
 
-void MagicMirrorManager::RenderThroughMirror(int mirrorIndex, XMFLOAT3 mirrorCamPos,
+void MagicMirrorManager::RenderThroughMirror(int mirrorIndex, int depthIndex, XMFLOAT3 mirrorCamPos, XMFLOAT3 prevMirrorCamPos,
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> viewportTarget,
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> viewportDSV,
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
 	shared_ptr<Camera> camPtr, vector<GameEntity*> gameObjects,
 	shared_ptr<Skybox> skybox, vector<Light> lights)
 {
+	if (depthIndex >= 8) return; // max out at 8 mirrors in
+
 	const float black[4] = { 0, 0, 0, 0 }; // keep this black
 
 	// Draw the mirrors (not to the viewport, but to the mirror texture)
 	context->ClearRenderTargetView(mirrorTarget.Get(), black);
 	context->OMSetRenderTargets(1, mirrorTarget.GetAddressOf(), viewportDSV.Get()); // keep original DSV for setting the correct white pixels
+
+	// Setting MirrorMap only matters for when the shader is set to the culled version (so after the first iteration)
+	mirrors[mirrorIndex % 2].GetMaterial()->GetPS()->SetShaderResourceView("MirrorMap", mirrorSRV);
 	mirrors[mirrorIndex % 2].Draw(context, camPtr);
+	mirrors[mirrorIndex % 2].GetMaterial()->GetPS()->SetShaderResourceView("MirrorMap", 0);
+	mirrors[mirrorIndex % 2].GetMaterial()->SetPS(mirrorPSCulled); // from here on, use this PS now
 
 	// Clear the depth buffer (resets per-pixel occlusion information)
 	context->ClearDepthStencilView(mirrorDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
@@ -199,6 +209,17 @@ void MagicMirrorManager::RenderThroughMirror(int mirrorIndex, XMFLOAT3 mirrorCam
 	skybox->Draw(context, mirrorCamView, mirrorProj);
 	skybox->SetPS(skyTempPS);
 	skyboxMirrorPS->SetShaderResourceView("MirrorMap", 0);
+
+	// DO IT AGANE
+	XMVECTOR pCamPosVec = XMLoadFloat3(&prevMirrorCamPos);
+	XMVECTOR newPos = XMVectorSubtract(XMLoadFloat3(&mirrorCamPos), pCamPosVec);
+	newPos = XMVectorAdd(XMVector3Rotate(newPos, XMLoadFloat4(&mirrorQuatDiff)), pCamPosVec);
+	XMStoreFloat3(&mirrorCamPos, newPos);
+
+	// Render the mirror inside
+	RenderThroughMirror(mirrorIndex, depthIndex + 1, mirrorCamPos, prevMirrorCamPos, viewportTarget, );
+
+	mirrors[mirrorIndex % 2].GetMaterial()->SetPS(mirrorPS); // reset to original PS when done
 }
 
 // Get one of the mirrors (index 0 or 1)
