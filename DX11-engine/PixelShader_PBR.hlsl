@@ -20,6 +20,7 @@ Texture2D AlbedoMap : register(t0);    // Albedo map
 Texture2D RoughnessMap : register(t1); // Roughness map
 Texture2D NormalMap : register(t2);    // Normal map
 Texture2D MetalnessMap : register(t3); // Metalness map
+Texture2D ShadowMap : register(t4);    // Shadow map
 
 SamplerState SamplerOptions : register(s0); // "s" registers for samplers
 
@@ -34,6 +35,19 @@ SamplerState SamplerOptions : register(s0); // "s" registers for samplers
 // --------------------------------------------------------
 float4 main(VertexToPixel input) : SV_TARGET
 {
+    // perform perspective divide manually
+    input.shadowMapPos /= input.shadowMapPos.w;
+
+    // Convert normalized device coords to UVs for sampling
+    float2 shadowUV = input.shadowMapPos.xy * 0.5f + 0.5f;
+    shadowUV.y = 1 - shadowUV.y; // Flip the Y
+
+    // Grab the distances: light-to-pixel and closest-surface
+    float distToLight = input.shadowMapPos.z;
+    float distShadowMap = ShadowMap.Sample(SamplerOptions, shadowUV).r;
+    if (distShadowMap < distToLight)
+        return float4(0, 0, 0, 1);
+
     // Renormalize normals and tangents
     input.normal = normalize(input.normal);
     input.tangent = normalize(input.tangent);

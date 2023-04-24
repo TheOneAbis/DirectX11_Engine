@@ -42,8 +42,11 @@ Game::Game(HINSTANCE hInstance)
 #endif
 
 	// Initialize random seed for future use as well
-	srand(time(NULL));
+	srand((unsigned int)time(NULL));
 	camIndex = 0;
+	lightView = {};
+	lightProj = {};
+	shadowMapRes = 0;
 }
 
 // --------------------------------------------------------
@@ -111,11 +114,12 @@ void Game::Init()
 	lights.push_back(newLight);
 
 	// -- SHADOW MAPPING STUFF -- \\
-	
+
+	shadowMapRes = 1024;
 	// Create Shadow Texture
 	D3D11_TEXTURE2D_DESC shadowDesc = {};
-	shadowDesc.Width = 1024; // Ideally a power of 2 (like 1024)
-	shadowDesc.Height = 1024; // Ideally a power of 2 (like 1024)
+	shadowDesc.Width = shadowMapRes; // Ideally a power of 2 (like 1024)
+	shadowDesc.Height = shadowMapRes; // Ideally a power of 2 (like 1024)
 	shadowDesc.ArraySize = 1;
 	shadowDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
 	shadowDesc.CPUAccessFlags = 0;
@@ -137,6 +141,7 @@ void Game::Init()
 		shadowTexture.Get(),
 		&shadowDSDesc,
 		shadowDSV.GetAddressOf());
+
 	// Create the SRV for the shadow map
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
@@ -150,18 +155,18 @@ void Game::Init()
 
 	// Create the light view matrix
 	XMVECTOR lightDir = XMLoadFloat3(&lights[0].Direction);
-	XMMATRIX lightView = XMMatrixLookToLH(
+	XMStoreFloat4x4(&lightView, XMMatrixLookToLH(
 		-lightDir * 20, // Position: "Backing up" 20 units from origin
 		lightDir, // Direction: light's direction
-		XMVectorSet(0, 1, 0, 0)); // Up: World up vector (Y axis)
+		XMVectorSet(0, 1, 0, 0))); // Up: World up vector (Y axis)
 
 	// Create the light proj matrix
-	float lightProjectionSize = 15.0f;
-	XMMATRIX lightProjection = XMMatrixOrthographicLH(
+	float lightProjectionSize = 30.0f;
+	XMStoreFloat4x4(&lightProj, XMMatrixOrthographicLH(
 		lightProjectionSize,
 		lightProjectionSize,
 		1.0f,
-		100.0f);
+		100.0f));
 
 	activeCam = cams[camIndex];
 	
@@ -202,6 +207,9 @@ void Game::LoadShaders()
 
 	skyVS = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"VertexShader_Skybox.cso").c_str());
 	skyPS = std::make_shared<SimplePixelShader>(device, context, FixPath(L"PixelShader_Skybox.cso").c_str());
+
+	// Create shadow vertex shader
+	shadowVS = std::make_shared<SimpleVertexShader>(device, context, FixPath(L"VS_ScreenPosition.cso").c_str());
 }
 
 
@@ -291,7 +299,7 @@ void Game::CreateGeometry()
 	CreateWICTextureFromFile(device.Get(), context.Get(), FixPath(L"../../Assets/Textures/rough_roughness.png").c_str(), 0, srv.GetAddressOf());
 	mats[3]->AddTextureSRV("RoughnessMap", srv);
 	
-	// Add default sampler for each material
+	// Add default sampler and other maps for each material
 	for (std::shared_ptr<Material> mat : mats)
 		mat->AddSampler("SamplerOptions", samplerState);
 
@@ -495,6 +503,10 @@ void Game::UpdateUI(float deltaTime)
 		}
 		currentTreeSize++;
 	}
+
+	// Shadow map
+	ImGui::Image(shadowSRV.Get(), ImVec2(512, 512));
+
 	ImGui::End();
 }
 
@@ -518,23 +530,52 @@ void Game::Draw(float deltaTime, float totalTime)
 		context->ClearDepthStencilView(shadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
 
-	// Disable pixel processing for shadow map
-	context->PSSetShader(0, 0, 0);
-
-
 	// Bind shadow map to render target view
 	ID3D11RenderTargetView* nullRTV{};
 	context->OMSetRenderTargets(1, &nullRTV, shadowDSV.Get());
-	
+
+	// Disable pixel processing for shadow map
+	context->PSSetShader(0, 0, 0);
+
+	// Change viewport resolution to match shadow map resolution
+	D3D11_VIEWPORT viewport = {};
+	viewport.Width = (float)shadowMapRes;
+	viewport.Height = (float)shadowMapRes;
+	viewport.MaxDepth = 1.0f;
+	context->RSSetViewports(1, &viewport);
+
+	// Set to basic VS and render entities
+	shadowVS->SetShader();
+	shadowVS->SetMatrix4x4("view", lightView);
+	shadowVS->SetMatrix4x4("projection", lightProj);
+	for (auto& e : gameObjects)
+	{
+		shadowVS->SetMatrix4x4("world", e->GetTransform()->GetWorldMatrix());
+		shadowVS->CopyAllBufferData();
+		e->GetMesh()->Draw();
+	}
+
+	// Reset the pipeline
+	viewport.Width = (float)this->windowWidth;
+	viewport.Height = (float)this->windowHeight;
+	context->RSSetViewports(1, &viewport);
+	context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), depthBufferDSV.Get());
+
 	// Render Game entities
 	for (GameEntity* gameObject : gameObjects)
 	{
 		std::shared_ptr<SimplePixelShader> ps = gameObject->GetMaterial()->GetPS();
+		std::shared_ptr<SimpleVertexShader> vs = gameObject->GetMaterial()->GetVS();
 		ps->SetData("lights",                         // name of the lights array in shader
 			&lights[0],                               // address of the data to set
 			sizeof(Light) * (int)lights.size());      // size of the data (whole struct) to set
-		
+
+		vs->SetMatrix4x4("lightView", lightView);
+		vs->SetMatrix4x4("lightProjection", lightProj);
+
+		ps->SetShaderResourceView("ShadowMap", shadowSRV);
 		gameObject->Draw(context, activeCam);
+		ps->SetShaderResourceView("ShadowMap", 0);
 	}
 	
 	// Render the skybox
