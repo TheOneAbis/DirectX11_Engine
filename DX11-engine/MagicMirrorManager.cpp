@@ -10,7 +10,7 @@ MagicMirrorManager::MagicMirrorManager(shared_ptr<Camera> playerCam,
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context) : GameEntity()
 {
 	// Create mirror shaders
-	shared_ptr<SimpleVertexShader> mirrorVS = make_shared<SimpleVertexShader>(device, context, FixPath(L"VS_MagicMirror.cso").c_str());
+	shared_ptr<SimpleVertexShader> mirrorVS = make_shared<SimpleVertexShader>(device, context, FixPath(L"VS_ScreenPosition.cso").c_str());
 	mirrorPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_MagicMirror.cso").c_str());
 	mirrorPSCulled = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_MagicMirror_Culled.cso").c_str());
 	mirrorViewPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_MagicMirrorView_PBR.cso").c_str());
@@ -128,7 +128,7 @@ void MagicMirrorManager::RenderThroughMirror(int mirrorIndex, int depthIndex, XM
 	context->OMSetRenderTargets(1, mirrorTargets[depthIndex % 2].GetAddressOf(), viewportDSV.Get()); // keep original DSV for setting the correct white pixels
 
 	// Setting MirrorMap only matters for when the shader is set to the culled version (so after the first iteration)
-	mirrors[mirrorIndex % 2].GetMaterial()->GetPS()->SetShaderResourceView("MirrorMap", mirrorSRVs[depthIndex % 2]);
+	mirrors[mirrorIndex % 2].GetMaterial()->GetPS()->SetShaderResourceView("MirrorMap", mirrorSRVs[(depthIndex + 1) % 2]);
 	mirrors[mirrorIndex % 2].GetMaterial()->GetPS()->SetFloat2("mirrorMapDimensions", camPtr->viewDimensions);
 	mirrors[mirrorIndex % 2].Draw(context, camPtr);
 	mirrors[mirrorIndex % 2].GetMaterial()->GetPS()->SetShaderResourceView("MirrorMap", 0);
@@ -232,7 +232,7 @@ void MagicMirrorManager::ResetMirrorTextures(Camera* cam, Microsoft::WRL::ComPtr
 		mirrorTargets[i].Reset();
 		mirrorSRVs[i].Reset();
 		device->CreateRenderTargetView(mirrorTextures[i].Get(), 0, mirrorTargets[i].GetAddressOf());
-		device->CreateShaderResourceView(mirrorTextures[i].Get(), 0, mirrorSRVs[(i + 1) % 2].GetAddressOf());
+		device->CreateShaderResourceView(mirrorTextures[i].Get(), 0, mirrorSRVs[i].GetAddressOf());
 	}
 
 	// Create mirror-unique depth buffers

@@ -45,7 +45,14 @@ private:
 	std::shared_ptr<Camera> activeCam;
 	int camIndex;
 
+	// lights and shadowmap stuff
 	std::vector<Light> lights;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> shadowDSV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shadowSRV;
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState> shadowRS;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> shadowSS;
+	DirectX::XMFLOAT4X4 lightView;
+	DirectX::XMFLOAT4X4 lightProj;
 	
 	// Shaders and shader-related constructs
 	std::shared_ptr<SimplePixelShader> pixelShader, customPS;

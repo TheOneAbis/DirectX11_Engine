@@ -231,9 +231,6 @@
     <FxCompile Include="VS_Terrain.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="VS_MagicMirror.hlsl">
-      <Filter>Shaders\MirrorShaders</Filter>
-    </FxCompile>
     <FxCompile Include="PS_MagicMirror.hlsl">
       <Filter>Shaders\MirrorShaders</Filter>
     </FxCompile>
@@ -251,6 +248,9 @@
     </FxCompile>
     <FxCompile Include="PS_MagicMirror_Culled.hlsl">
       <Filter>Shaders\MirrorShaders</Filter>
+    </FxCompile>
+    <FxCompile Include="VS_ScreenPosition.hlsl">
+      <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
