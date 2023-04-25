@@ -23,6 +23,7 @@ Texture2D MetalnessMap : register(t3); // Metalness map
 Texture2D ShadowMap : register(t4);    // Shadow map
 
 SamplerState SamplerOptions : register(s0); // "s" registers for samplers
+SamplerComparisonState ShadowSampler : register(s1); // unique sampler for comparing texels in a shadow map
 
 // --------------------------------------------------------
 // The entry point (main method) for our pixel shader
@@ -45,8 +46,12 @@ float4 main(VertexToPixel input) : SV_TARGET
     // Grab the distances: light-to-pixel and closest-surface
     float distToLight = input.shadowMapPos.z;
     float distShadowMap = ShadowMap.Sample(SamplerOptions, shadowUV).r;
-    if (distShadowMap < distToLight)
-        return float4(0, 0, 0, 1);
+    
+    // Get a ratio of comparison results using SampleCmpLevelZero()
+    float shadowAmount = ShadowMap.SampleCmpLevelZero(
+        ShadowSampler,
+        shadowUV,
+        distToLight).r;
 
     // Renormalize normals and tangents
     input.normal = normalize(input.normal);
@@ -113,6 +118,10 @@ float4 main(VertexToPixel input) : SV_TARGET
         // If this is a point or spot light, attenuate the color
         if (attenuate)
             lightCol *= Attenuate(lights[i], input.worldPosition);
+        
+        // if this is the directional light, apply shadow
+        if (i == 0)
+            lightCol *= shadowAmount;
         
         totalLightColor += lightCol;
     }

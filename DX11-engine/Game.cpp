@@ -115,7 +115,7 @@ void Game::Init()
 
 	// -- SHADOW MAPPING STUFF -- \\
 
-	shadowMapRes = 1024;
+	shadowMapRes = 2048;
 	// Create Shadow Texture
 	D3D11_TEXTURE2D_DESC shadowDesc = {};
 	shadowDesc.Width = shadowMapRes; // Ideally a power of 2 (like 1024)
@@ -153,20 +153,32 @@ void Game::Init()
 		&srvDesc,
 		shadowSRV.GetAddressOf());
 
-	// Create the light view matrix
-	XMVECTOR lightDir = XMLoadFloat3(&lights[0].Direction);
-	XMStoreFloat4x4(&lightView, XMMatrixLookToLH(
-		-lightDir * 20, // Position: "Backing up" 20 units from origin
-		lightDir, // Direction: light's direction
-		XMVectorSet(0, 1, 0, 0))); // Up: World up vector (Y axis)
-
 	// Create the light proj matrix
-	float lightProjectionSize = 30.0f;
+	float lightProjectionSize = 100.0f;
 	XMStoreFloat4x4(&lightProj, XMMatrixOrthographicLH(
 		lightProjectionSize,
 		lightProjectionSize,
 		1.0f,
-		100.0f));
+		300.0f));
+
+	// Create Rasterizer State for depth biasing
+	D3D11_RASTERIZER_DESC shadowRastDesc = {};
+	shadowRastDesc.FillMode = D3D11_FILL_SOLID;
+	shadowRastDesc.CullMode = D3D11_CULL_BACK;
+	shadowRastDesc.DepthClipEnable = true;
+	shadowRastDesc.DepthBias = 1000; // Min. precision units, not world units!
+	shadowRastDesc.SlopeScaledDepthBias = 1.0f; // Bias more based on slope
+	device->CreateRasterizerState(&shadowRastDesc, &shadowRS);
+
+	// Create sampler state for shadow map
+	D3D11_SAMPLER_DESC shadowSampDesc = {};
+	shadowSampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+	shadowSampDesc.ComparisonFunc = D3D11_COMPARISON_LESS;
+	shadowSampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+	shadowSampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+	shadowSampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+	shadowSampDesc.BorderColor[0] = 1.0f; // Only need the first component
+	device->CreateSamplerState(&shadowSampDesc, &shadowSS);
 
 	activeCam = cams[camIndex];
 	
@@ -529,10 +541,11 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Clear the Shadow depth buffer
 		context->ClearDepthStencilView(shadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
-
+	
 	// Bind shadow map to render target view
 	ID3D11RenderTargetView* nullRTV{};
 	context->OMSetRenderTargets(1, &nullRTV, shadowDSV.Get());
+	context->RSSetState(shadowRS.Get()); // set rasterizer state for depth biasing
 
 	// Disable pixel processing for shadow map
 	context->PSSetShader(0, 0, 0);
@@ -554,12 +567,20 @@ void Game::Draw(float deltaTime, float totalTime)
 		shadowVS->CopyAllBufferData();
 		e->GetMesh()->Draw();
 	}
+	context->RSSetState(0); // disable depth biasing state
 
 	// Reset the pipeline
 	viewport.Width = (float)this->windowWidth;
 	viewport.Height = (float)this->windowHeight;
 	context->RSSetViewports(1, &viewport);
 	context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), depthBufferDSV.Get());
+
+	// update view matrix (in the future this will be redone so it's only recalculated when the light transform changes)
+	XMVECTOR lightDir = XMLoadFloat3(&lights[0].Direction);
+	XMStoreFloat4x4(&lightView, XMMatrixLookToLH(
+		-lightDir * 150, // Position: "Backing up" 20 units from origin
+		lightDir, // Direction: light's direction
+		XMVectorSet(0, 1, 0, 0))); // Up: World up vector (Y axis)
 
 	// Render Game entities
 	for (GameEntity* gameObject : gameObjects)
@@ -574,8 +595,10 @@ void Game::Draw(float deltaTime, float totalTime)
 		vs->SetMatrix4x4("lightProjection", lightProj);
 
 		ps->SetShaderResourceView("ShadowMap", shadowSRV);
+		ps->SetSamplerState("ShadowSampler", shadowSS);
 		gameObject->Draw(context, activeCam);
 		ps->SetShaderResourceView("ShadowMap", 0);
+		ps->SetSamplerState("ShadowSampler", 0);
 	}
 	
 	// Render the skybox
