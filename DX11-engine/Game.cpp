@@ -115,7 +115,7 @@ void Game::Init()
 
 	// -- SHADOW MAPPING STUFF -- \\
 
-	shadowMapRes = 2048;
+	shadowMapRes = 1024;
 	// Create Shadow Texture
 	D3D11_TEXTURE2D_DESC shadowDesc = {};
 	shadowDesc.Width = shadowMapRes; // Ideally a power of 2 (like 1024)
@@ -154,12 +154,12 @@ void Game::Init()
 		shadowSRV.GetAddressOf());
 
 	// Create the light proj matrix
-	float lightProjectionSize = 100.0f;
+	float lightProjectionSize = 35.0f;
 	XMStoreFloat4x4(&lightProj, XMMatrixOrthographicLH(
 		lightProjectionSize,
 		lightProjectionSize,
 		1.0f,
-		300.0f));
+		100.0f));
 
 	// Create Rasterizer State for depth biasing
 	D3D11_RASTERIZER_DESC shadowRastDesc = {};
@@ -578,7 +578,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	// update view matrix (in the future this will be redone so it's only recalculated when the light transform changes)
 	XMVECTOR lightDir = XMLoadFloat3(&lights[0].Direction);
 	XMStoreFloat4x4(&lightView, XMMatrixLookToLH(
-		-lightDir * 150, // Position: "Backing up" 20 units from origin
+		-lightDir * 20, // Position: "Backing up" 20 units from origin
 		lightDir, // Direction: light's direction
 		XMVectorSet(0, 1, 0, 0))); // Up: World up vector (Y axis)
 
@@ -587,20 +587,20 @@ void Game::Draw(float deltaTime, float totalTime)
 	{
 		std::shared_ptr<SimplePixelShader> ps = gameObject->GetMaterial()->GetPS();
 		std::shared_ptr<SimpleVertexShader> vs = gameObject->GetMaterial()->GetVS();
-		ps->SetData("lights",                         // name of the lights array in shader
-			&lights[0],                               // address of the data to set
-			sizeof(Light) * (int)lights.size());      // size of the data (whole struct) to set
-
 		vs->SetMatrix4x4("lightView", lightView);
 		vs->SetMatrix4x4("lightProjection", lightProj);
 
+		ps->SetData("lights",                         // name of the lights array in shader
+			&lights[0],                               // address of the data to set
+			sizeof(Light) * (int)lights.size());      // size of the data (whole struct) to set
+		ps->SetFloat3("ambient", XMFLOAT3(0.2f, 0.2f, 0.2f));
 		ps->SetShaderResourceView("ShadowMap", shadowSRV);
 		ps->SetSamplerState("ShadowSampler", shadowSS);
 		gameObject->Draw(context, activeCam);
 		ps->SetShaderResourceView("ShadowMap", 0);
 		ps->SetSamplerState("ShadowSampler", 0);
 	}
-	
+
 	// Render the skybox
 	skybox->Draw(context, activeCam);
 
