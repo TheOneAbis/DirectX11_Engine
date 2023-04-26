@@ -52,6 +52,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> shadowRS;
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> shadowSS;
 	std::shared_ptr<SimpleVertexShader> shadowVS;
+	DirectX::XMFLOAT3 ambientLight;
+
 	DirectX::XMFLOAT4X4 lightView;
 	DirectX::XMFLOAT4X4 lightProj;
 	unsigned int shadowMapRes;

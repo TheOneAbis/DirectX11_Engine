@@ -14,8 +14,9 @@ cbuffer ExternalData : register(b0)
     Light lights[MAX_LIGHT_COUNT];
     
     float textureScale;
-    float3 mirrorNormal;
+    float3 ambient;
     
+    float3 mirrorNormal;
     float2 mirrorMapDimensions;
     float3 mirrorPos;
 }
@@ -78,7 +79,7 @@ float4 main(VertexToPixel input) : SV_TARGET
     // because of linear texture sampling, so we lerp the specular color to match
     float3 specularColor = lerp(NONMETAL_F0, albedoColor.rgb, metal);
 
-    float3 totalLightColor = float3(0, 0, 0);
+    float3 totalLightColor = ambient * albedoColor * (1 - metal);
     // Loop through the lights
     for (uint i = 0; i < MAX_LIGHT_COUNT; i++)
     {

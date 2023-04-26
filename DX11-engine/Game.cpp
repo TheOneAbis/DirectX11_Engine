@@ -47,6 +47,7 @@ Game::Game(HINSTANCE hInstance)
 	lightView = {};
 	lightProj = {};
 	shadowMapRes = 0;
+	ambientLight = {};
 }
 
 // --------------------------------------------------------
@@ -89,7 +90,7 @@ void Game::Init()
 	cams.push_back(std::make_shared<Camera>(Perspective, (float)windowWidth, (float)windowHeight, 60.0f, 0.1f, 1000.0f, XMFLOAT3(-3, 0, -3.0f), XMFLOAT3(0.2f, 0, 0)));
 
 	// Create the scene lights
-	// NOTE: got rid of the other 2 directional lights; makes sense to only have one for the sunlight
+	ambientLight = XMFLOAT3(0.2f, 0.2f, 0.2f);
 	Light newLight = {};
 	newLight.Type = LIGHT_TYPE_DIRECTIONAL;
 	newLight.Direction = XMFLOAT3(0.0f, -0.3f, -1.0f);
@@ -593,7 +594,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		ps->SetData("lights",                         // name of the lights array in shader
 			&lights[0],                               // address of the data to set
 			sizeof(Light) * (int)lights.size());      // size of the data (whole struct) to set
-		ps->SetFloat3("ambient", XMFLOAT3(0.2f, 0.2f, 0.2f));
+		ps->SetFloat3("ambient", ambientLight);
 		ps->SetShaderResourceView("ShadowMap", shadowSRV);
 		ps->SetSamplerState("ShadowSampler", shadowSS);
 		gameObject->Draw(context, activeCam);
@@ -605,7 +606,7 @@ void Game::Draw(float deltaTime, float totalTime)
 	skybox->Draw(context, activeCam);
 
 	// Draw mirrors & update mirror maps, draw all objects through mirrors
-	mirrorManager->Draw(context, activeCam, gameObjects, skybox, lights);
+	mirrorManager->Draw(context, activeCam, gameObjects, skybox, lights, ambientLight);
 
 	// Render the UI
 	ImGui::Render();
