@@ -380,7 +380,7 @@ void Game::OnResize()
 	for (std::shared_ptr<Camera> cam : cams)
 		cam->UpdateProjectionMatrix((float)windowWidth, (float)windowHeight);
 
-	mirrorManager->ResetMirrorTextures(activeCam.get(), device);
+	mirrorManager->ResetMirrors(activeCam.get(), device);
 }
 
 // --------------------------------------------------------

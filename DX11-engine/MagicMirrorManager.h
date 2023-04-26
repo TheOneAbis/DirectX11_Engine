@@ -26,7 +26,7 @@ public:
 
 	MagicMirror* GetMirror(int index);
 
-	void ResetMirrorTextures(Camera* cam, Microsoft::WRL::ComPtr<ID3D11Device> device);
+	void ResetMirrors(Camera* cam, Microsoft::WRL::ComPtr<ID3D11Device> device);
 
 private:
 

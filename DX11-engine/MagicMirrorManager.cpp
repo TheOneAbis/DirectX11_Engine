@@ -30,15 +30,15 @@ MagicMirrorManager::MagicMirrorManager(shared_ptr<Camera> playerCam,
 	for (int i = 0; i < 2; i++)
 		mirrors[i] = MagicMirror(make_shared<Mesh>(verts, 4, indices, 6, device, context), mirrorMat);
 
-	ResetMirrorTextures(playerCam.get(), device);
+	ResetMirrors(playerCam.get(), device);
 }
 
 void MagicMirrorManager::Init()
 {
-	mirrors[0].GetTransform()->SetPosition(1.0f, 0.0f, 0.0f);
-	mirrors[0].GetTransform()->Rotate(0, 1.57f, 0);
-	mirrors[1].GetTransform()->SetPosition(-3.0f, 0.0f, 0.0f);
-	mirrors[1].GetTransform()->Rotate(0, -1.57f, 0);
+	mirrors[0].GetTransform()->SetPosition(0.0f, 0.0f, 5.0f);
+	mirrors[0].GetTransform()->Rotate(0, 0, 0);
+	mirrors[1].GetTransform()->SetPosition(0.0f, 0.0f, 0.0f);
+	mirrors[1].GetTransform()->Rotate(0, -3.14f, 0);
 }
 
 void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, shared_ptr<Camera> camPtr)
@@ -49,7 +49,6 @@ void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11De
 	for (int i = 0; i < 2; i++)
 	{
 		// -- CALCULATE MIRROR CAM POSITION
-		// Get player cam in mirror-in space, negate x and z, then put it back in world space relative to mirror-out
 		XMMATRIX mirrorInWorld = XMLoadFloat4x4(&mirrors[i].GetTransform()->GetWorldMatrix());
 		XMVECTOR d = XMMatrixDeterminant(mirrorInWorld); // for calculating the inverse world
 		XMMATRIX mirrorOutWorld = XMLoadFloat4x4(&mirrors[(i + 1) % 2].GetTransform()->GetWorldMatrix());
@@ -62,25 +61,14 @@ void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11De
 
 		// -- CALCULATE MIRROR CAM ROTATION
 		XMVECTOR mirrorInQuat = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&mirrors[i].GetTransform()->GetPitchYawRoll()));
+		XMVECTOR correctionQuat = XMQuaternionRotationAxis(XMVectorSet(0, 1, 0, 0), 3.14159f);
 		XMVECTOR mirrorOutQuat = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&mirrors[(i + 1) % 2].GetTransform()->GetPitchYawRoll()));
+		XMVECTOR quatResult = XMQuaternionMultiply(XMQuaternionMultiply(XMQuaternionInverse(mirrorInQuat), correctionQuat), mirrorOutQuat);
 		// store rotation difference for later use
-		XMStoreFloat4(&mirrorQuatDiff, XMQuaternionMultiply(XMQuaternionInverse(mirrorInQuat), mirrorOutQuat));
-
-		// man this sucks
-		XMVECTOR newForward = XMVectorMultiply(XMVector3Rotate(XMLoadFloat3(&camPtr->GetTransform().GetForward()), 
-			XMQuaternionInverse(mirrorInQuat)), XMVectorSet(-1, 1, -1, 1));
-		XMVECTOR newUp = XMVectorMultiply(XMVector3Rotate(XMLoadFloat3(&camPtr->GetTransform().GetUp()), 
-			XMQuaternionInverse(mirrorInQuat)), XMVectorSet(-1, 1, -1, 1));
-
-		XMStoreFloat3(&mirrorCamForwards[(i + 1) % 2], XMVector3Rotate(newForward, mirrorOutQuat));
-		XMStoreFloat3(&mirrorCamUps[(i + 1) % 2], XMVector3Rotate(newUp, mirrorOutQuat));
+		XMStoreFloat4(&mirrorQuatDiff, quatResult);
+		XMStoreFloat3(&mirrorCamForwards[(i + 1) % 2], XMVector3Rotate(XMLoadFloat3(&camPtr->GetTransform().GetForward()), quatResult));
+		XMStoreFloat3(&mirrorCamUps[(i + 1) % 2], XMVector3Rotate(XMLoadFloat3(&camPtr->GetTransform().GetUp()), quatResult));
 	}
-
-	// Set this mirror's projection matrix w/ new near clip
-	XMStoreFloat4x4(&mirrorProj, XMMatrixPerspectiveFovLH(
-		camPtr->fov * (3.14159f / 180.0f),
-		camPtr->viewDimensions.x / camPtr->viewDimensions.y,
-		camPtr->nearClip, camPtr->farClip));
 }
 
 
@@ -188,14 +176,12 @@ void MagicMirrorManager::RenderThroughMirror(int mirrorIndex, int depthIndex, XM
 	// DO IT AGANE
 	XMVECTOR pCamPosVec = XMLoadFloat3(&prevMirrorCamPos);
 	XMVECTOR cCamPosVec = XMLoadFloat3(&mirrorCamPos);
-	XMVECTOR quatVec = XMLoadFloat4(&mirrorQuatDiff);
 	prevMirrorCamPos = mirrorCamPos;
-	XMVECTOR newPos = XMVectorAdd(XMVectorSubtract(cCamPosVec, pCamPosVec), cCamPosVec);
-	XMVECTOR newUp = XMVector3Rotate(XMLoadFloat3(&mirrorCamUps[(mirrorIndex + 1) % 2]), quatVec);
-	XMVECTOR newForward = XMVector3Rotate(XMLoadFloat3(&mirrorCamForwards[(mirrorIndex + 1) % 2]), quatVec);
-	XMStoreFloat3(&mirrorCamPos, newPos);
-	XMStoreFloat3(&mirrorCamUps[(mirrorIndex + 1) % 2], newUp);
-	XMStoreFloat3(&mirrorCamForwards[(mirrorIndex + 1) % 2], -newForward);
+	XMStoreFloat3(&mirrorCamPos, XMVectorAdd(XMVectorSubtract(cCamPosVec, pCamPosVec), cCamPosVec));
+
+	XMVECTOR quatVec = XMLoadFloat4(&mirrorQuatDiff);
+	XMStoreFloat3(&mirrorCamUps[(mirrorIndex + 1) % 2], XMVector3Rotate(XMLoadFloat3(&mirrorCamUps[(mirrorIndex + 1) % 2]), quatVec));
+	XMStoreFloat3(&mirrorCamForwards[(mirrorIndex + 1) % 2], XMVector3Rotate(XMLoadFloat3(&mirrorCamForwards[(mirrorIndex + 1) % 2]), quatVec));
 
 	// Render the mirror inside
 	RenderThroughMirror(mirrorIndex, depthIndex + 1, mirrorCamPos, prevMirrorCamPos, viewportTarget, mirrorDSV, context, viewDimensions, gameObjects, skybox, lights, ambient);
@@ -212,7 +198,7 @@ MagicMirror* MagicMirrorManager::GetMirror(int index)
 
 // Reset the mirror texture SRVs and RTVs (as well as the DSVs)
 // This is most likely useful for resetting the texture with different dimensions
-void MagicMirrorManager::ResetMirrorTextures(Camera* cam, Microsoft::WRL::ComPtr<ID3D11Device> device)
+void MagicMirrorManager::ResetMirrors(Camera* cam, Microsoft::WRL::ComPtr<ID3D11Device> device)
 {
 	// Create mirror render target and SRV
 	D3D11_TEXTURE2D_DESC mirrorTextDesc = {};
@@ -265,4 +251,10 @@ void MagicMirrorManager::ResetMirrorTextures(Camera* cam, Microsoft::WRL::ComPtr
 		mirrorDSV.Reset();
 		device->CreateDepthStencilView(depthBufferTexture.Get(), 0, mirrorDSV.GetAddressOf());
 	}
+
+	// also reset the projection matrix since we have new view dimensions now
+	XMStoreFloat4x4(&mirrorProj, XMMatrixPerspectiveFovLH(
+		cam->fov * (3.14159f / 180.0f),
+		cam->viewDimensions.x / cam->viewDimensions.y,
+		cam->nearClip, cam->farClip));
 }
