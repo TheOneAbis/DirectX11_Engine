@@ -13,5 +13,6 @@ I am also using the ImGUI library for easy UI.
 However, I am taking it beyond the scope of this class by making my own additions. Some examples include:
 
 - Terrain Generation with Perlin Noise (implemented)
+- Cool Portal renderer (implemented, super proud of this one)
 - Physics and Collision (begun, this one is long-term for sure)
 - Water rendering (planned)
