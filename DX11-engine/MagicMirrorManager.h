@@ -40,7 +40,7 @@ private:
 	DirectX::XMFLOAT3 mirrorCamPositions[2];
 	DirectX::XMFLOAT3 mirrorCamForwards[2];
 	DirectX::XMFLOAT3 mirrorCamUps[2];
-	DirectX::XMFLOAT4 mirrorQuatDiff;
+	DirectX::XMFLOAT4 mirrorRotDiffs[2];
 
 	std::shared_ptr<SimplePixelShader> mirrorPS;
 	std::shared_ptr<SimplePixelShader> mirrorPSCulled;

@@ -35,10 +35,10 @@ MagicMirrorManager::MagicMirrorManager(shared_ptr<Camera> playerCam,
 
 void MagicMirrorManager::Init()
 {
-	mirrors[0].GetTransform()->SetPosition(0.0f, 0.0f, 5.0f);
-	mirrors[0].GetTransform()->Rotate(0, 0, 0);
-	mirrors[1].GetTransform()->SetPosition(0.0f, 0.0f, 0.0f);
-	mirrors[1].GetTransform()->Rotate(0, -3.14f, 0);
+	mirrors[0].GetTransform()->SetPosition(0.0f, 0.0f, 0.0f);
+	mirrors[0].GetTransform()->Rotate(0, 1.57f, 0);
+	mirrors[1].GetTransform()->SetPosition(-3.0f, 0.0f, 0.0f);
+	mirrors[1].GetTransform()->Rotate(0, -1.57f, 0);
 }
 
 void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context, shared_ptr<Camera> camPtr)
@@ -53,8 +53,8 @@ void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11De
 		XMVECTOR d = XMMatrixDeterminant(mirrorInWorld); // for calculating the inverse world
 		XMMATRIX mirrorOutWorld = XMLoadFloat4x4(&mirrors[(i + 1) % 2].GetTransform()->GetWorldMatrix());
 
-		XMVECTOR camPosMirrorOut = XMLoadFloat3(&camPtr->GetTransform().GetPosition()); // cam in world space
-		camPosMirrorOut = XMVector3Transform(camPosMirrorOut, XMMatrixInverse(&d, mirrorInWorld)); // cam in mirror-in space
+		XMVECTOR camPosOriginal = XMLoadFloat3(&camPtr->GetTransform().GetPosition());
+		XMVECTOR camPosMirrorOut = XMVector3Transform(camPosOriginal, XMMatrixInverse(&d, mirrorInWorld)); // cam in mirror-in space
 		camPosMirrorOut = XMVectorMultiply(camPosMirrorOut, XMVectorSet(-1, 1, -1, 1)); // negate x and z
 		camPosMirrorOut = XMVector3Transform(camPosMirrorOut, mirrorOutWorld); // consider cam to be in mirror-out space now, and put it back in world space
 		XMStoreFloat3(&mirrorCamPositions[(i + 1) % 2], camPosMirrorOut);
@@ -65,7 +65,7 @@ void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11De
 		XMVECTOR mirrorOutQuat = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&mirrors[(i + 1) % 2].GetTransform()->GetPitchYawRoll()));
 		XMVECTOR quatResult = XMQuaternionMultiply(XMQuaternionMultiply(XMQuaternionInverse(mirrorInQuat), correctionQuat), mirrorOutQuat);
 		// store rotation difference for later use
-		XMStoreFloat4(&mirrorQuatDiff, quatResult);
+		XMStoreFloat4(&mirrorRotDiffs[i], quatResult);
 		XMStoreFloat3(&mirrorCamForwards[(i + 1) % 2], XMVector3Rotate(XMLoadFloat3(&camPtr->GetTransform().GetForward()), quatResult));
 		XMStoreFloat3(&mirrorCamUps[(i + 1) % 2], XMVector3Rotate(XMLoadFloat3(&camPtr->GetTransform().GetUp()), quatResult));
 	}
@@ -173,19 +173,21 @@ void MagicMirrorManager::RenderThroughMirror(int mirrorIndex, int depthIndex, XM
 	skybox->SetPS(skyTempPS);
 	skyboxMirrorPS->SetShaderResourceView("MirrorMap", 0);
 
-	// DO IT AGANE
-	XMVECTOR pCamPosVec = XMLoadFloat3(&prevMirrorCamPos);
-	XMVECTOR cCamPosVec = XMLoadFloat3(&mirrorCamPos);
+	XMVECTOR pCamVec = XMLoadFloat3(&prevMirrorCamPos);
+	XMVECTOR cCamVec = XMLoadFloat3(&mirrorCamPos);
+	XMVECTOR quatVec = XMLoadFloat4(&mirrorRotDiffs[mirrorIndex % 2]);
 	prevMirrorCamPos = mirrorCamPos;
-	XMStoreFloat3(&mirrorCamPos, XMVectorAdd(XMVectorSubtract(cCamPosVec, pCamPosVec), cCamPosVec));
 
-	XMVECTOR quatVec = XMLoadFloat4(&mirrorQuatDiff);
-	XMStoreFloat3(&mirrorCamUps[(mirrorIndex + 1) % 2], XMVector3Rotate(XMLoadFloat3(&mirrorCamUps[(mirrorIndex + 1) % 2]), quatVec));
-	XMStoreFloat3(&mirrorCamForwards[(mirrorIndex + 1) % 2], XMVector3Rotate(XMLoadFloat3(&mirrorCamForwards[(mirrorIndex + 1) % 2]), quatVec));
+	// Calculate the next view matrix position, up and forward
+	XMStoreFloat3(&mirrorCamPos, 
+		XMVectorAdd(XMVector3Rotate(cCamVec - pCamVec, quatVec), cCamVec));
+	XMStoreFloat3(&mirrorCamUps[(mirrorIndex + 1) % 2], 
+		XMVector3Rotate(XMLoadFloat3(&mirrorCamUps[(mirrorIndex + 1) % 2]), quatVec));
+	XMStoreFloat3(&mirrorCamForwards[(mirrorIndex + 1) % 2], 
+		XMVector3Rotate(XMLoadFloat3(&mirrorCamForwards[(mirrorIndex + 1) % 2]), quatVec));
 
-	// Render the mirror inside
+	// DO IT AGANE
 	RenderThroughMirror(mirrorIndex, depthIndex + 1, mirrorCamPos, prevMirrorCamPos, viewportTarget, mirrorDSV, context, viewDimensions, gameObjects, skybox, lights, ambient);
-
 	mirrors[mirrorIndex % 2].GetMaterial()->SetPS(mirrorPS); // reset to original PS when done
 }
 
