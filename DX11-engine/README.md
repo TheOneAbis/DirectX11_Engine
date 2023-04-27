@@ -5,4 +5,5 @@ Interesting Code Examples:
 
 - Terrain.h/.cpp and TerrainEntity.h/.cpp, as well as Helpers.h/.cpp (perlin noise for terrain generation)
 - VS_Terrain.hlsl and Noise.hlsli (perlin noise vertex shader)
+- MagicMirrorManager and associated shaders, responsible for rendering portals
 - Collider.h/.cpp (early WIP, nothing much here yet)
