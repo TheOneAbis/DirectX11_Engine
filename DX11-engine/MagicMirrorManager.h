@@ -30,8 +30,16 @@ public:
 
 private:
 
+	/*struct Plane
+	{
+		DirectX::XMFLOAT3 Position;
+		DirectX::XMFLOAT3 Normal;
+	};
+	Plane mirrorPlanes[4];*/
+
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> mirrorTargets[2];
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mirrorSRVs[2];
+	/*Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mirrorPlaneUAV;*/
 
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> mirrorDSV;
 

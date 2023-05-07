@@ -1,4 +1,9 @@
 #include "ShaderIncludes.hlsli"
+struct Plane
+{
+    float4 Position;
+    float3 Normal;
+};
 
 cbuffer ExternalData : register(b0)
 {
@@ -19,6 +24,8 @@ cbuffer ExternalData : register(b0)
     float3 mirrorNormal;
     float2 mirrorMapDimensions;
     float3 mirrorPos;
+    
+    Plane mirrorPlanes[4];
 }
 
 Texture2D AlbedoMap : register(t0);    // Albedo map
@@ -36,9 +43,9 @@ float4 main(VertexToPixel input) : SV_TARGET
 {
     // Skip this pixel if it does not overlap with the mirror's pixels OR it is behind the mirror
     // (the mirror pixels are white, everywhere else is black)
-    if (MirrorMap.Sample(SamplerOptions, input.screenPosition.xy / mirrorMapDimensions).r < 1 ||
+        if (MirrorMap.Sample(SamplerOptions, input.screenPosition.xy / mirrorMapDimensions).r < 1 ||
         dot(normalize(-mirrorNormal), normalize(input.worldPosition - mirrorPos)) <= 0)
-        discard;
+            discard;
     
     // Renormalize normals and tangents
     input.normal = normalize(input.normal);

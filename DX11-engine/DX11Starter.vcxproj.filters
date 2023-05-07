@@ -252,6 +252,9 @@
     <FxCompile Include="VS_ScreenPosition.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="CS_MirrorPlanes.hlsl">
+      <Filter>Shaders\MirrorShaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="ShaderIncludes.hlsli">

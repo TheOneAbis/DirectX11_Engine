@@ -15,8 +15,8 @@ MagicMirrorManager::MagicMirrorManager(shared_ptr<Camera> playerCam,
 	mirrorPSCulled = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_MagicMirror_Culled.cso").c_str());
 	mirrorViewPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_MagicMirrorView_PBR.cso").c_str());
 	skyboxMirrorPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_SkyboxMirror.cso").c_str());
-
 	shared_ptr<Material> mirrorMat = make_shared<Material>(XMFLOAT4(0, 0, 0, 0), 0, 0, mirrorVS, mirrorPS);
+
 	Vertex verts[4] =
 	{
 		{{ -1, 1, 0 }},
@@ -25,6 +25,17 @@ MagicMirrorManager::MagicMirrorManager(shared_ptr<Camera> playerCam,
 		{{-1, -1, 0}}
 	};
 	unsigned int indices[6] = { 0, 1, 2, 0, 2, 3 };
+
+	/*for (int i = 0; i < 4; i++)
+	{
+		mirrorPlanes[i] = {};
+		XMVECTOR pos = XMLoadFloat3(&verts[i].Position);
+		XMVECTOR midpt = (pos + XMLoadFloat3(&verts[(i + 1) % 4].Position)) / 2.0f;
+		XMStoreFloat3(&mirrorPlanes[i].Position, midpt);
+		XMFLOAT3 temp;
+		XMStoreFloat3(&temp, XMVector3Normalize(midpt - pos));
+		mirrorPlanes[i].Normal = { temp.y, -temp.x, 0 };
+	}*/
 
 	// Create the mirrors
 	for (int i = 0; i < 2; i++)
@@ -144,9 +155,7 @@ void MagicMirrorManager::RenderThroughMirror(int mirrorIndex, int depthIndex, XM
 
 		std::shared_ptr<SimplePixelShader> ps = mat->GetPS();
 
-		ps->SetData("lights",
-			&lights[0],
-			sizeof(Light) * (int)lights.size());
+		ps->SetData("lights", &lights[0], sizeof(Light) * (int)lights.size());
 		ps->SetFloat3("ambient", ambient);
 
 		// send mirror data to PS
