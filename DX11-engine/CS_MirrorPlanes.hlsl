@@ -17,6 +17,7 @@ cbuffer ExternalData
 RWStructuredBuffer<Plane> planes : register(u0);
 
 // main
+// Note: good practices for thread ID's to match buffer dimensions
 [numthreads(4, 1, 1)]
 void main( uint3 DTid : SV_DispatchThreadID )
 {

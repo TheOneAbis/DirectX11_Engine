@@ -30,16 +30,18 @@ public:
 
 private:
 
-	/*struct Plane
+	struct Plane
 	{
 		DirectX::XMFLOAT3 Position;
 		DirectX::XMFLOAT3 Normal;
 	};
-	Plane mirrorPlanes[4];*/
+	Plane mirrorPlanes[4];
 
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> mirrorTargets[2];
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mirrorSRVs[2];
-	/*Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mirrorPlaneUAV;*/
+
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mirrorPlaneUAVs[2];
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mirrorPlaneSRVs[2];
 
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> mirrorDSV;
 
@@ -51,6 +53,7 @@ private:
 	DirectX::XMFLOAT4 mirrorRotDiffs[2];
 
 	std::shared_ptr<SimplePixelShader> mirrorPS;
+	std::shared_ptr<SimpleComputeShader> mirrorPlanesCS;
 	std::shared_ptr<SimplePixelShader> mirrorPSCulled;
 	std::shared_ptr<SimplePixelShader> mirrorViewPS;
 	std::shared_ptr<SimplePixelShader> skyboxMirrorPS;

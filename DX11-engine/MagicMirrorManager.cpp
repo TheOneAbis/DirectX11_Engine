@@ -15,6 +15,9 @@ MagicMirrorManager::MagicMirrorManager(shared_ptr<Camera> playerCam,
 	mirrorPSCulled = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_MagicMirror_Culled.cso").c_str());
 	mirrorViewPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_MagicMirrorView_PBR.cso").c_str());
 	skyboxMirrorPS = make_shared<SimplePixelShader>(device, context, FixPath(L"PS_SkyboxMirror.cso").c_str());
+	// for calculating mirror planes, used to test if objects are partly through mirrors
+	mirrorPlanesCS = make_shared<SimpleComputeShader>(device, context, FixPath(L"CS_MirrorPlanes.cso").c_str());
+
 	shared_ptr<Material> mirrorMat = make_shared<Material>(XMFLOAT4(0, 0, 0, 0), 0, 0, mirrorVS, mirrorPS);
 
 	Vertex verts[4] =
@@ -26,7 +29,8 @@ MagicMirrorManager::MagicMirrorManager(shared_ptr<Camera> playerCam,
 	};
 	unsigned int indices[6] = { 0, 1, 2, 0, 2, 3 };
 
-	/*for (int i = 0; i < 4; i++)
+	// Calculate mirror planes (positions & normals)
+	for (int i = 0; i < 4; i++)
 	{
 		mirrorPlanes[i] = {};
 		XMVECTOR pos = XMLoadFloat3(&verts[i].Position);
@@ -35,11 +39,26 @@ MagicMirrorManager::MagicMirrorManager(shared_ptr<Camera> playerCam,
 		XMFLOAT3 temp;
 		XMStoreFloat3(&temp, XMVector3Normalize(midpt - pos));
 		mirrorPlanes[i].Normal = { temp.y, -temp.x, 0 };
-	}*/
+	}
 
-	// Create the mirrors
+	// create buffers to hold mirror plane data
+	D3D11_BUFFER_DESC planesBufDesc = {};
+	planesBufDesc.ByteWidth = sizeof(Plane) * 4; // buffer size in bytes
+	planesBufDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+	planesBufDesc.CPUAccessFlags = 0;
+	planesBufDesc.MiscFlags = 0;
+	planesBufDesc.StructureByteStride = 24; // 12 for position, 12 for normal
+	planesBufDesc.Usage = D3D11_USAGE_DEFAULT;
+	
+	Microsoft::WRL::ComPtr<ID3D11Buffer> planesBuffers[2];
+
+	// Create the mirrors and UAVs
 	for (int i = 0; i < 2; i++)
+	{
 		mirrors[i] = MagicMirror(make_shared<Mesh>(verts, 4, indices, 6, device, context), mirrorMat);
+		device->CreateBuffer(&planesBufDesc, 0, planesBuffers[i].GetAddressOf());
+		device->CreateUnorderedAccessView(planesBuffers[i].Get(), 0, mirrorPlaneUAVs[0].GetAddressOf());
+	}
 
 	ResetMirrors(playerCam.get(), device);
 }
@@ -79,6 +98,12 @@ void MagicMirrorManager::Update(float deltaTime, Microsoft::WRL::ComPtr<ID3D11De
 		XMStoreFloat4(&mirrorRotDiffs[i], quatResult);
 		XMStoreFloat3(&mirrorCamForwards[(i + 1) % 2], XMVector3Rotate(XMLoadFloat3(&camPtr->GetTransform().GetForward()), quatResult));
 		XMStoreFloat3(&mirrorCamUps[(i + 1) % 2], XMVector3Rotate(XMLoadFloat3(&camPtr->GetTransform().GetUp()), quatResult));
+
+		// launch compute shader to calculate mirror planes in world 
+		mirrorPlanesCS->SetMatrix4x4("mirrorWorld", mirrors[i].GetTransform()->GetWorldMatrix());
+		mirrorPlanesCS->SetMatrix4x4("mirrorWorldInvTranspose", mirrors[i].GetTransform()->GetWorldInverseTransposeMatrix());
+		mirrorPlanesCS->SetShader();
+		context->Dispatch(4, 1, 1);
 	}
 }
 
