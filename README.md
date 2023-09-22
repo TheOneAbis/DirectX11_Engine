@@ -1,8 +1,8 @@
 # DirectX11 Engine: About This Project
 
-This is for a project that is currently being developed for a class.
+This project was originally developed for a class, but I turned it into a passion project where I can experiment.
 
-Several features in here were not made by me, but by my professor, such as:
+Some features in here were not made by me, but by my professor, such as:
 - SimpleShader
 - DXCore
 - OBJ file loading algorithm in Mesh.cpp
@@ -10,7 +10,14 @@ Several features in here were not made by me, but by my professor, such as:
 
 I am also using the ImGUI library for easy UI.
 
-However, I am taking it beyond the scope of this class by making my own additions. Some examples include:
+Features I actually did myself:
+
+- Materials and Physically-based Rendering
+- Shadows
+- Skybox Rendering
+- All Shader Programming
+
+Features I'm particularly proud of:
 
 - Terrain Generation with Perlin Noise
-- Cool Portal renderer (super proud of this one)
+- Portal Renderer (this one, especially!!! I wrote my own portal renderer that looks similar to what you might expect in Portal 2)
