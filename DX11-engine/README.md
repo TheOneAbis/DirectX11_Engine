@@ -51,7 +51,7 @@ As for actually rendering through the mirrors again with this new view matrix, i
 
 This is a quick run-down of how my mirror rendering algorithm works. I left out some of the finer details related to working with DirectX 11 specifically to get this working. 
 
-What's unfortunate is that I didn't develop this feature to the point that objects can pass through them. I'm not sure how Portal does it, but below is a sketch of some outlier cases I'd need to account for when trying to do this (from a side-view)
+What's unfortunate is that I didn't develop this feature to the point that objects can pass through them. Below is a sketch of some outlier cases I'd need to account for when doing this, such as what different shapes can pass through portals, and how they would be rendered (from a side-view)
 
 ![image](https://github.com/TheOneAbis/DirectX11_Engine/assets/26350896/3d341136-dff5-4659-94ee-800af106d3f3)
 
