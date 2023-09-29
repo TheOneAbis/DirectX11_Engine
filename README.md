@@ -10,7 +10,7 @@ Some features in here were not made by me, but by my professor, such as:
 
 I am also using the ImGUI library for easy UI.
 
-Features I actually did myself:
+Features I did myself:
 
 - Materials and Physically-based Rendering
 - Shadows
