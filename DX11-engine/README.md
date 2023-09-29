@@ -1,4 +1,4 @@
-# DX11 Engine Source Code & Documentation on Magic Mirrors (Portals)
+# DX11 Engine Source Code
 Source Code for DX11 Engine project.
 
 Interesting Code Examples:
