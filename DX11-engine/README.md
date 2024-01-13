@@ -10,7 +10,7 @@ Interesting Code Examples:
 # A Brief Documentation on the Mirror (Portal) Rendering algorithm
 
 Note: In this documentation I refer to portals as “mirrors” because in my head, portals are round, and here they're square and look more like mirrors. And then they're "magic" because when you look through one, you're actually looking at the other side of the other mirror.
-Theoretically, however, considering how I implemented this feature, one could make the portal any shape they want, i.e. circle, donut, triangle, you name it. Could even be a 3D object if you REALLY wanted these to look real weird.
+Theoretically, however, considering how I implemented this feature, one could make the portal any shape they want, i.e. circle, donut, triangle, you name it.
 
 ## How to Think About Mirrors
 
@@ -53,6 +53,8 @@ As for actually rendering through the mirrors again with this new view matrix, i
 This is a quick run-down of how my mirror rendering algorithm works. I left out some of the finer details related to working with DirectX 11 specifically to get this working. 
 
 What's unfortunate is that I didn't develop this feature to the point that objects can pass through them. Below is a sketch of some outlier cases I'd need to account for when doing this, such as what different shapes can pass through portals, and how they would be rendered (from a side-view)
+
+Here's a good demonstration of the end result: https://www.youtube.com/watch?v=Rqa4c3LPUXU
 
 ![image](https://github.com/TheOneAbis/DirectX11_Engine/assets/26350896/3d341136-dff5-4659-94ee-800af106d3f3)
 
