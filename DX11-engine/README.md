@@ -9,7 +9,7 @@ Interesting Code Examples:
 
 # A Brief Documentation on the Mirror (Portal) Rendering algorithm
 
-Note: In this documentation I refer to portals as “mirrors” because in my head, portals are round, and here they're square and look more like mirrors.
+Note: In this documentation I refer to portals as “mirrors” because in my head, portals are round, and here they're square and look more like mirrors. Of course they aren't actually mirrors, hence "magic mirrors".
 
 ## How to Think About Mirrors
 
