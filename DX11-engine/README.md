@@ -10,7 +10,7 @@ Interesting Code Examples:
 # A Brief Documentation on the Mirror (Portal) Rendering algorithm
 
 Note: In this documentation I refer to portals as “mirrors” because in my head, portals are round, and here they're square and look more like mirrors. And then they're "magic" because when you look through one, you're actually looking at the other side of the other mirror.
-Theoretically, however, considering how I implemented this feature, one could make the portal any shape they want, i.e. circle, donut, triangle, you name it.
+Theoretically, however, considering how I implemented this feature, one could make the portal any shape they want, i.e. circle, donut, triangle, you name it. Could even be a 3D object if you REALLY wanted these to look real weird.
 
 ## How to Think About Mirrors
 
