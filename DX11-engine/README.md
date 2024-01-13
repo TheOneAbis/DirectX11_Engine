@@ -54,7 +54,6 @@ This is a quick run-down of how my mirror rendering algorithm works. I left out 
 
 What's unfortunate is that I didn't develop this feature to the point that objects can pass through them. Below is a sketch of some outlier cases I'd need to account for when doing this, such as what different shapes can pass through portals, and how they would be rendered (from a side-view)
 
-Here's a good demonstration of the end result: https://www.youtube.com/watch?v=Rqa4c3LPUXU
-
 ![image](https://github.com/TheOneAbis/DirectX11_Engine/assets/26350896/3d341136-dff5-4659-94ee-800af106d3f3)
 
+Here's a good demonstration I recorded of the end result: https://www.youtube.com/watch?v=Rqa4c3LPUXU
